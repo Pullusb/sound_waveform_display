@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.1.1] - 2021-07-05
+
+### Fixed
+- Draw regions (discard timeline editor for now)
 ## [0.1.0] - 2021-07-05
 
 ### Added

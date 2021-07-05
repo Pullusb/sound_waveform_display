@@ -11,6 +11,10 @@ def draw_callback_px(self, context):
     '''Draw callback use by modal to draw in viewport'''
     if context.area.type != 'DOPESHEET_EDITOR':
         return
+    # available_modes : 'TIMELINE', 'DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'
+    if context.space_data.mode not in ('DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'):
+        return
+
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')  # initiate shader
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
@@ -19,7 +23,7 @@ def draw_callback_px(self, context):
     batch_line = batch_for_shader(
         shader, 'LINE_STRIP', {"pos": self.coords})
     shader.bind()
-    shader.uniform_float("color", (0.01, 0.64, 1.0, 0.8))
+    shader.uniform_float("color", (0.01, 0.64, 1.0, 0.7))
     batch_line.draw(shader)
     # self.batch_line.draw(shader)
     
@@ -163,7 +167,7 @@ class SWD_OT_timeline_draw_test(Operator):
         #     print('mouse_region', (event.mouse_region_x, event.mouse_region_y))
         #     return {"RUNNING_MODAL"}
 
-        context.area.tag_redraw()
+        # context.area.tag_redraw()
         return {'PASS_THROUGH'}
         # return {"RUNNING_MODAL"}
 
