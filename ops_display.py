@@ -1,4 +1,4 @@
-import bpy
+import bpy, os
 from bpy.types import Operator
 
 import gpu
@@ -9,11 +9,13 @@ from .preferences import get_addon_prefs
 
 def draw_callback_px(self, context):
     '''Draw callback use by modal to draw in viewport'''
-    if context.area.type != 'DOPESHEET_EDITOR':
+    # if context.area.type != 'DOPESHEET_EDITOR':
+    if context.area.type not in ('DOPESHEET_EDITOR', 'GRAPH_EDITOR'):
         return
-    # available_modes : 'TIMELINE', 'DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'
-    if context.space_data.mode not in ('DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'):
-        return
+    if context.area.type == 'DOPESHEET_EDITOR':
+        # available_modes : 'TIMELINE', 'DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'
+        if context.space_data.mode not in ('DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'):
+            return
 
     shader = gpu.shader.from_builtin('2D_UNIFORM_COLOR')  # initiate shader
     bgl.glEnable(bgl.GL_BLEND)
@@ -68,11 +70,101 @@ class SWD_OT_timeline_draw_test(Operator):
         #     self.viewtype = bpy.types.SpaceClipEditor
         #     self._handle = bpy.types.SpaceClipEditor.draw_handler_add(
         #         draw_callback_px, args, 'WINDOW', 'POST_PIXEL')
-            # 
         
+        ## BAKING
+        bpy.types.Scene.wd_bake_prop = bpy.props.FloatProperty()
+        org_frame = context.scene.frame_current
+
+        strip = context.scene.sequence_editor.active_strip
+        if not strip:
+            self.report({'ERROR'}, 'No active strip')
+            return ({'CANCELLED'})
+        if strip.type != 'SOUND':
+            self.report({'ERROR'}, 'active VSE strip is not sound type')
+            return ({'CANCELLED'})
+
+        # store
+        sframe = strip.frame_final_start
+        print('startframe: ', sframe)
+        sfp = os.path.abspath(bpy.path.abspath(strip.sound.filepath))
+        fps = context.scene.render.fps
+        context.scene.frame_current = sframe
+
+        ## 1 create an fcurve, 2 make it show up, 3 select only this one before bake
+        context.scene.keyframe_insert('wd_bake_prop')
+        fcufilter = context.space_data.dopesheet.filter_fcurve_name
+        context.space_data.dopesheet.filter_fcurve_name = 'wd_bake_prop'
+
+        act = None
+        for action in bpy.data.actions:
+            if not action.name.startswith('SceneAction'):
+                continue
+            if action.fcurves.find('wd_bake_prop'):
+                act = action
+                break
+        
+        if not act:
+            self.report({'ERROR'}, 'Action containing wd_bake_prop not found')
+            return ({'CANCELLED'})
+        
+        print('act: ', act.name)
+
+        fcu = act.fcurves.find('wd_bake_prop')
+        if not fcu:
+            self.report({'ERROR'}, 'baking prop wd_bake_prop not found')
+            return ({'CANCELLED'})
+
+        fcu.select = True
+
+        # Bakes a sound wave to selected F-Curves
+        print(1, fcu.data_path, len(fcu.keyframe_points))
+        bpy.ops.graph.sound_bake(filepath=sfp, 
+        show_multiview=False, use_multiview=False, display_type='DEFAULT', sort_method='DEFAULT', 
+        low=0,
+        high=100000,
+        attack=0.005,
+        release=0.2,
+        threshold=0,
+        use_accumulate=False,
+        use_additive=False,
+        use_square=False,
+        sthreshold=0.1)
+        fcu.update()
+        print(2, fcu.data_path, len(fcu.keyframe_points))
+        point_coord = [p.co for p in fcu.sampled_points] # from sampled points
+        # print('point_coord: ', len(point_coord))
+
+        ### Dosn't work... Need to directly sample from ffmpeg...
+
+        # bpy.ops.graph.unbake() # convert to real points (can access sampled points but needed to clean/smooth)
+        # fcu.update()
+
+        # print(3, fcu.data_path, len(fcu.keyframe_points))
+        # bpy.ops.graph.clean(threshold=0.001, channels=False) # avoid flats
+        # fcu.update()
+
+        # print(4, fcu.data_path, len(fcu.keyframe_points))
+        # bpy.ops.graph.smooth()
+        # fcu.update()
+
+
+        # print(fcu.data_path, len(fcu.keyframe_points))
+        # point_coord = [p.co for p in fcu.keyframe_points]
+        # print('point_coord: ', point_coord[:15])
+        
+
+        # restore
+        context.scene.frame_current = org_frame
+        context.scene.render.fps = fps
+        context.space_data.dopesheet.filter_fcurve_name = fcufilter
+
+        ## PREPARE DRAWING
         # self.coords = [(10,10),(300,150),(400,500)]
-        fcu = bpy.data.actions['CubeAction'].fcurves[0]
-        point_coord = [p.co for p in fcu.keyframe_points]
+        # fcu = bpy.data.actions['CubeAction'].fcurves[0]
+        # delete fcurve and aciton if needed
+        act.fcurves.remove(fcu)
+        if not len(act.fcurves):
+            bpy.data.actions.remove(act)
 
         ## get max height to normalize (else use 1)
         max_level = max(point_coord,  key=lambda x: x[1])
@@ -86,19 +178,23 @@ class SWD_OT_timeline_draw_test(Operator):
         self._handle = self.viewtype.draw_handler_add(
                 draw_callback_px, args, self.spacetype, 'POST_PIXEL')
         context.window_manager.modal_handler_add(self)
-        context.area.tag_redraw()
+        # context.area.tag_redraw()
         return {'RUNNING_MODAL'}
 
     def _exit_modal(self, context):
         self.viewtype.draw_handler_remove(self._handle, self.spacetype)
-        context.area.tag_redraw()
+        # context.area.tag_redraw()
 
     def modal(self, context, event):
         ## left_bar
+
         margin = 12 * context.preferences.view.ui_scale
-        self.coords = [\
-            (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1]*100)+margin)\
-            for co in self.org_coords]
+        if context.region:
+            self.coords = [\
+                (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1]*100)+margin)\
+                for co in self.org_coords]
+        
+        # print('self.coords: ', self.coords[0])
 
         if event.type == 'ESC':
             print('Stop Modal')
@@ -155,6 +251,7 @@ class SWD_OT_timeline_draw_test(Operator):
             self.coords.append((x, event.mouse_region_y))
             print('x: ', x)
             print('y: ', y)
+            context.area.tag_redraw()
             return {"RUNNING_MODAL"}
         
         # if event.type == 'LEFTMOUSE' and event.value=='PRESS':
@@ -170,6 +267,8 @@ class SWD_OT_timeline_draw_test(Operator):
         # context.area.tag_redraw()
         return {'PASS_THROUGH'}
         # return {"RUNNING_MODAL"}
+
+
 
 classes=(
 # SWD_OT_opsname,

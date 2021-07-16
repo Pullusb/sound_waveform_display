@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.1.2] - 2021-07-16
+
+### Changed
+- Tryed to implement bake from curve but too unpredictable and random
+
 ## [0.1.1] - 2021-07-05
 
 ### Fixed
