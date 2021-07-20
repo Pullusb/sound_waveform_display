@@ -12,7 +12,7 @@ def change_edit_lines_opacity(self, context):
         if not gp.is_annotation:
             gp.edit_line_color[3]=self.edit_lines_opacity
     
-class SWD_PGT_settings(bpy.types.PropertyGroup) :
+class SWD_PGT_settings(bpy.types.PropertyGroup):
     ## HIDDEN to hide the animatable dot thing
     stringprop : StringProperty(
         name="str prop",

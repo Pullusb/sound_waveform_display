@@ -3,7 +3,7 @@ from bpy.types import Panel
 from .preferences import get_addon_prefs
 
 
-class SWD_PT_SWD_ui(Panel):
+class SWD_PT_SWD_GRAPH_ui(Panel):
     bl_label = "Display waveform"
     bl_space_type = 'GRAPH_EDITOR'
     bl_region_type = 'UI'
@@ -13,7 +13,23 @@ class SWD_PT_SWD_ui(Panel):
         layout = self.layout
 
         row = layout.row()
-        row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
+        # row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
+        row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')
+        row.operator('anim.disable_draw', text='Off')
+
+class SWD_PT_SWD_DOPE_ui(Panel):
+    bl_label = "Display waveform"
+    bl_space_type = 'DOPESHEET_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "Display"
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        # row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
+        row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')
+        row.operator('anim.disable_draw', text='Off')
 
 
 ## function to append in a menu
@@ -30,7 +46,8 @@ def palette_manager_menu(self, context):
 #-# REGISTER
 
 classes=(
-SWD_PT_SWD_ui,
+SWD_PT_SWD_GRAPH_ui,
+SWD_PT_SWD_DOPE_ui,
 )
 
 def register(): 

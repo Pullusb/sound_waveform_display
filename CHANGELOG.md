@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.1.3] - 2021-07-21
+
+### Changed
+- handler without modal ops running.
+- Start on ffmpeg generated image base model
+
 ## [0.1.2] - 2021-07-16
 
 ### Changed
