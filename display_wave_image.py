@@ -4,6 +4,7 @@ from pathlib import Path
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
+from time import time
 from .preferences import get_addon_prefs
 import subprocess
 
@@ -101,26 +102,60 @@ class SWD_OT_enable_draw(Operator):
         # color : https://ffmpeg.org/ffmpeg-utils.html#Color
         # wave options : https://ffmpeg.org/ffmpeg-filters.html#showwaves
         # showwave pics : https://ffmpeg.org/ffmpeg-filters.html#showwavespic
-
+        # exemples : https://www.zixi.org/archives/478.html
         # scale=lin <- defaut is Fine
         # filter=peak not working yet filter must be dealt differently
 
         # TODO Optional : separated left right to top-bottom of the area with 
         # split_channels=1 <- use defaut (do not split except if needed)
-
+        
+        ## color@0.1 <-- alpha a 10%
         # :draw=full (else scale) # seems to clear line border
 
         # TODO save in OS temp folder
 
-        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
-        cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+        # COMPAND off :,compand=gain=-6 (less accurate wave but less flat... fo not seem worthy)
+        # MONO out : [0:a]aformat=channel_layouts=mono
+
+        if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
+            print('cutted sound')
+            # need to calculate the crop for command
+            # Get sound full time
+            # fulltime = strip.frame_duration * context.scene.render.fps
+            timein = strip.frame_offset_start / context.scene.render.fps # -ss
+            # duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
+            duration = strip.frame_final_duration / context.scene.render.fps # -t
+            
+            cmd = ['ffmpeg',
+            '-ss', f'{timein:.2f}',
+            '-t', f'{duration:.2f}',
+            '-i', str(sfp), 
+            '-filter_complex', 
+            "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x400:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
+            '-frames:v', '1', '-y', str(ifp)]
+
+            print('timein: ', timein)
+            print('duration: ', duration)
+        else:
+            print('plain sound')
+            # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
+            # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+            # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+            cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+            cmd = ['ffmpeg', '-i', str(sfp), 
+            '-filter_complex', 
+            "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x400:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
+            '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=4000x1600", '-frames:v', '1', '-y', str(ifp)]
-        print('\ncmd:', ' '.join(cmd))
+        print('\ncmd:', ' '.join(list(map(str, cmd)))) # print final cmd
+        
+        t0 = time()
         ret = subprocess.call(cmd)
         if ret != 0:
             self.report({'ERROR'}, '--- problem generating sound wave image')
             return ({'CANCELLED'})
 
+        print(f'Generated sound waveform: {time() - t0:.2f}s')
         if not ifp.exists():
             self.report({'ERROR'}, f'Waveform not generated at : {ifp}')
             return ({'CANCELLED'})
@@ -139,15 +174,16 @@ class SWD_OT_enable_draw(Operator):
         # sw_coordlist = ((100, 100), (600, 100), (600, 200), (100, 200)) # test
 
         ## full image
-        # sw_coordlist = ((sw_start, 0),
-        #                 (sw_end, 0),
-        #                 (sw_end, height),
-        #                 (sw_start, height))
-        ## full image
-        sw_coordlist = ((sw_start, -half),
-                        (sw_end, -half),
-                        (sw_end, half),
-                        (sw_start, half))
+        sw_coordlist = ((sw_start, 0),
+                        (sw_end, 0),
+                        (sw_end, height),
+                        (sw_start, height))
+        
+        ## half height position (if not cutted)
+        # sw_coordlist = ((sw_start, -half),
+        #                 (sw_end, -half),
+        #                 (sw_end, half),
+        #                 (sw_start, half))
         
         ## enable handler
         view_type = bpy.types.SpaceDopeSheetEditor
@@ -164,6 +200,11 @@ class SWD_OT_enable_draw(Operator):
         return {'FINISHED'}
 
 
+def disable_waveform_draw_handler():
+    global handle
+    if handle:
+        bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle, 'WINDOW')
+
 class SWD_OT_disable_draw(Operator):
     bl_idname = "anim.disable_draw"
     bl_label = "Wave display off"
@@ -174,9 +215,7 @@ class SWD_OT_disable_draw(Operator):
         global sw_coordlist
         global handle
         if handle:
-            # self.viewtype.draw_handler_remove(self._handle, self.spacetype)
-            bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle, 'WINDOW')
-            context.area.tag_redraw()
+            disable_waveform_draw_handler()
         else:
             self.report({'WARNING'}, 'Handler already disable')
         ## with normal handler
@@ -199,5 +238,6 @@ def register():
         bpy.utils.register_class(cls)
 
 def unregister():
+    disable_waveform_draw_handler()
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
