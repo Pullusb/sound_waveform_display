@@ -2,7 +2,7 @@ bl_info = {
     "name": "Sound Waveform Display",
     "description": "Display waveform in dopesheet",
     "author": "Samuel Bernou",
-    "version": (0, 1, 5),
+    "version": (0, 1, 6),
     "blender": (2, 92, 0),
     "location": "View3D",
     "warning": "WIP",
@@ -23,7 +23,7 @@ def register():
     if bpy.app.background:
         return
 
-    # properties.register()
+    properties.register()
     # preferences.register()
     # ops_display.register()
     display_wave_image.register()
@@ -38,7 +38,7 @@ def unregister():
     display_wave_image.unregister()
     # ops_display.unregister()
     # preferences.unregister()
-    # properties.unregister()
+    properties.unregister()
 
 
 if __name__ == "__main__":

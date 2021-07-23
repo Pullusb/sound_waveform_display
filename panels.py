@@ -31,6 +31,10 @@ class SWD_PT_SWD_DOPE_ui(Panel):
         row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')
         row.operator('anim.disable_draw', text='Off')
 
+        row = layout.row()
+        row.prop(context.scene.swd_settings, 'height_offset')
+
+
 
 ## function to append in a menu
 def palette_manager_menu(self, context):

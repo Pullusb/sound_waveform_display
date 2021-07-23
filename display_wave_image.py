@@ -27,11 +27,17 @@ def draw_callback_px(self, context):
     margin = 12 * context.preferences.view.ui_scale
     # print('sw_coordlist: ', sw_coordlist)
     
-    if context.region:
-        coords = [\
-            # (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1]*100)+margin)\
-            (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1])+margin)\
-            for co in sw_coordlist]
+    if not context.region:
+        return
+    coords = [\
+        # (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1]*100)+margin)\
+        # (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1])+margin)\
+        [context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1])+margin]\
+        for co in sw_coordlist]
+
+    ## Absolute offset
+    coords[2][1] += context.scene.swd_settings.height_offset
+    coords[3][1] += context.scene.swd_settings.height_offset
 
     shader = gpu.shader.from_builtin('2D_IMAGE')
     batch = batch_for_shader(
@@ -47,12 +53,15 @@ def draw_callback_px(self, context):
 
     # TODO : modulate opacity
     # TODO : adjust height with a interface linked slider
+
     bgl.glEnable(bgl.GL_BLEND) # bgl.GL_SRGB8_ALPHA8
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
 
     shader.bind()
+
+    # shader.uniform_float("color", (0.8,0.1,0.1,0.5)) # how set color/transparency ?
     shader.uniform_int("image", 0)
     batch.draw(shader)
     # self.batch_line.draw(shader)
