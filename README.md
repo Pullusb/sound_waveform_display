@@ -21,3 +21,13 @@ Quick usage description
 
 Where is the stuff in UI or shortcut
 
+<!-- TODO 
+
+Adaptative resolution ?
+Custom resolution ?
+
+ffmpeg handle:
+    - ffmpeg bin path in pref
+    - ffmpeg auto check for version
+    - auto download ? (platform dependent ?)
+-->

@@ -4,6 +4,7 @@ from bpy.props import (FloatProperty,
                         EnumProperty,
                         StringProperty,
                         IntProperty,
+                        FloatVectorProperty,
                         PointerProperty)
 
 ## update on prop change
@@ -26,8 +27,13 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
 
     height_offset : IntProperty(
         name="Height Offset", description="Adjust the height of the waveform", 
-        default=0, min=-1000, max=1000, soft_min=-800, soft_max=800, step=1, options={'HIDDEN'})#, subtype='PIXEL'
+        default=0, min=-10000, max=10000, soft_min=-5000, soft_max=5000, step=1, options={'HIDDEN'})#, subtype='PIXEL'
 
+    color : FloatVectorProperty(
+        name="Color", description="Get wanted color (need relaunch)", default=(0.0368, 0.1714, 0.3371),
+        step=3, precision=2,
+        subtype='COLOR', # COLOR_GAMMA
+        size=3, options={'HIDDEN'})
     ## property with update on change
     # edit_lines_opacity : FloatProperty(
     #     name="edit lines Opacity", description="Change edit lines opacity for all grease pencils", 

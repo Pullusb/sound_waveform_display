@@ -7,6 +7,7 @@ from gpu_extras.batch import batch_for_shader
 from time import time
 from .preferences import get_addon_prefs
 import subprocess
+import tempfile
 
 sw_coordlist = []
 handle = None
@@ -54,13 +55,16 @@ def draw_callback_px(self, context):
     # TODO : modulate opacity
     # TODO : adjust height with a interface linked slider
 
+
     bgl.glEnable(bgl.GL_BLEND) # bgl.GL_SRGB8_ALPHA8
-    bgl.glEnable(bgl.GL_LINE_SMOOTH)
+    # bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
 
     shader.bind()
 
+    bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_NEAREST)
+    bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_NEAREST)
     # shader.uniform_float("color", (0.8,0.1,0.1,0.5)) # how set color/transparency ?
     shader.uniform_int("image", 0)
     batch.draw(shader)
@@ -68,7 +72,7 @@ def draw_callback_px(self, context):
     
     # restore opengl defaults
     # bgl.glLineWidth(1)
-    bgl.glDisable(bgl.GL_LINE_SMOOTH)
+    # bgl.glDisable(bgl.GL_LINE_SMOOTH)
     bgl.glDisable(bgl.GL_BLEND)
 
 
@@ -106,7 +110,9 @@ class SWD_OT_enable_draw(Operator):
         sfp = Path(sfp)
         print('sfp: ', sfp)
         sname = 'waveform.png' # sfp.stem + '_waveform'
-        ifp = sfp.parent / sname
+        
+        # ifp = sfp.parent / sname # same folder as the source video
+        ifp = Path(tempfile.gettempdir()) / sname # temp files
 
         # color : https://ffmpeg.org/ffmpeg-utils.html#Color
         # wave options : https://ffmpeg.org/ffmpeg-filters.html#showwaves
@@ -139,12 +145,13 @@ class SWD_OT_enable_draw(Operator):
             '-ss', f'{timein:.2f}',
             '-t', f'{duration:.2f}',
             '-i', str(sfp), 
+            '-hide_banner', '-loglevel', 'error',
             '-filter_complex', 
-            "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x400:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
+            "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
             '-frames:v', '1', '-y', str(ifp)]
 
-            print('timein: ', timein)
-            print('duration: ', duration)
+            # print('timein: ', timein)
+            # print('duration: ', duration)
         else:
             print('plain sound')
             # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
@@ -152,9 +159,11 @@ class SWD_OT_enable_draw(Operator):
             # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
             cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
             cmd = ['ffmpeg', '-i', str(sfp), 
+            '-hide_banner', '-loglevel', 'error',
             '-filter_complex', 
-            "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x400:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
+            "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
             '-frames:v', '1', '-y', str(ifp)]
+
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=4000x1600", '-frames:v', '1', '-y', str(ifp)]
         print('\ncmd:', ' '.join(list(map(str, cmd)))) # print final cmd
         

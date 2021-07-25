@@ -33,6 +33,8 @@ class SWD_PT_SWD_DOPE_ui(Panel):
 
         row = layout.row()
         row.prop(context.scene.swd_settings, 'height_offset')
+        # row = layout.row()
+        # row.prop(context.scene.swd_settings, 'color')
 
 
 

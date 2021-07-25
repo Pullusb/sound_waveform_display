@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.1.7] - 2021-07-26
+
+### Added
+- neat clipped border when zoomed on waveform
+- Silent ffmpeg running in console
+- generate the image file in temp dir
 
 ## [0.1.6] - 2021-07-24
 
