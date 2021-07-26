@@ -5,6 +5,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+
+## [0.1.8] - 2021-07-26
+
+### Added
+- display also in graph editor and timeline
+- 3 toggles to choose where to display
+- automatically get audio strip if there if only 1 available in VSE
+- Error handling in case sound filepath is bad or is packed.
+- warning if used strip is muted
+- info on strip used
+- wave is now transparent with a bgl fusion mode (needs more testing)
+
 ## [0.1.7] - 2021-07-26
 
 ### Added

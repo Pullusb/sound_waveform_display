@@ -20,14 +20,25 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
     #     description="",
     #     default="")# update=None, get=None, set=None
     
-    # boolprop : BoolProperty(
-    #     name="bool prop",
-    #     description="",
-    #     default=False, options={'HIDDEN'}) # options={'ANIMATABLE'},subtype='NONE', update=None, get=None, set=None
+    use_graph : BoolProperty(
+        name="Graph",
+        description="Enable display in graph editor",
+        default=True, options={'HIDDEN'})
+    
+    use_dope : BoolProperty(
+        name="Dopesheet",
+        description="Enable display in dopesheet editor",
+        default=True, options={'HIDDEN'})
+    
+    use_time : BoolProperty(
+        name="Timeline",
+        description="Enable display in timeline editor",
+        default=True, options={'HIDDEN'})
 
     height_offset : IntProperty(
         name="Height Offset", description="Adjust the height of the waveform", 
         default=0, min=-10000, max=10000, soft_min=-5000, soft_max=5000, step=1, options={'HIDDEN'})#, subtype='PIXEL'
+    
 
     color : FloatVectorProperty(
         name="Color", description="Get wanted color (need relaunch)", default=(0.0368, 0.1714, 0.3371),

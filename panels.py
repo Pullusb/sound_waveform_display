@@ -3,27 +3,7 @@ from bpy.types import Panel
 from .preferences import get_addon_prefs
 
 
-class SWD_PT_SWD_GRAPH_ui(Panel):
-    bl_label = "Display waveform"
-    bl_space_type = 'GRAPH_EDITOR'
-    bl_region_type = 'UI'
-    bl_category = "Display"
-
-    def draw(self, context):
-        layout = self.layout
-
-        row = layout.row()
-        # row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
-        row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')
-        row.operator('anim.disable_draw', text='Off')
-
-class SWD_PT_SWD_DOPE_ui(Panel):
-    bl_label = "Display waveform"
-    bl_space_type = 'DOPESHEET_EDITOR'
-    bl_region_type = 'UI'
-    bl_category = "Display"
-
-    def draw(self, context):
+def side_menu(self, context):
         layout = self.layout
 
         row = layout.row()
@@ -33,8 +13,41 @@ class SWD_PT_SWD_DOPE_ui(Panel):
 
         row = layout.row()
         row.prop(context.scene.swd_settings, 'height_offset')
+
+        row = layout.row()
+        row.prop(context.scene.swd_settings, 'use_dope')
+        row.prop(context.scene.swd_settings, 'use_graph')
+        row = layout.row()
+        row.prop(context.scene.swd_settings, 'use_time')
+
+        
         # row = layout.row()
         # row.prop(context.scene.swd_settings, 'color')
+    
+
+class SWD_PT_SWD_GRAPH_ui(Panel):
+    bl_label = "Display waveform"
+    bl_space_type = 'GRAPH_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "Display"
+
+    def draw(self, context):
+        side_menu(self, context)
+        # layout = self.layout
+
+        # row = layout.row()
+        # # row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
+        # row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')
+        # row.operator('anim.disable_draw', text='Off')
+
+class SWD_PT_SWD_DOPE_ui(Panel):
+    bl_label = "Display waveform"
+    bl_space_type = 'DOPESHEET_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "Display"
+
+    def draw(self, context):
+        side_menu(self, context)
 
 
 

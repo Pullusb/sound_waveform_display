@@ -10,20 +10,28 @@ import subprocess
 import tempfile
 
 sw_coordlist = []
-handle = None
+handle_dope = None
+handle_graph = None
 image = None
 sw_start = 0
 sw_end = 100
 
 def draw_callback_px(self, context):
     '''Draw callback use by modal to draw in viewport'''
-    # if context.area.type != 'DOPESHEET_EDITOR':
     if context.area.type not in ('DOPESHEET_EDITOR', 'GRAPH_EDITOR'):
         return
     if context.area.type == 'DOPESHEET_EDITOR':
-        # available_modes : 'TIMELINE', 'DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'
-        if context.space_data.mode not in ('DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'):
-            return
+        # available modes : 'TIMELINE', 'DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'
+        if context.space_data.mode == 'TIMELINE':
+            if not context.scene.swd_settings.use_time:
+                return
+        else:
+            if not context.scene.swd_settings.use_dope:
+                return
+        # if context.space_data.mode not in ('DOPESHEET', 'FCURVES','ACTION','GPENCIL','MASK','CACHEFILE'):
+        #     return
+    if context.area.type == 'GRAPH_EDITOR' and not context.scene.swd_settings.use_graph:
+        return
 
     margin = 12 * context.preferences.view.ui_scale
     # print('sw_coordlist: ', sw_coordlist)
@@ -61,6 +69,15 @@ def draw_callback_px(self, context):
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
 
+    ## TODO how to tweak transparency
+    # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, size, size, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, pixels)
+    # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, sx, sy, 0, bgl.GL_RGBA, bgl.GL_FLOAT, buf)
+
+    # bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA) # looks like default...
+    # bgl.glBlendFunc(bgl.GL_DST_COLOR, bgl.GL_ZERO) # alpha is black
+    bgl.glBlendFunc(bgl.GL_ONE, bgl.GL_ONE) # interesting : like an additive filter
+    # bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
+
     shader.bind()
 
     bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_NEAREST)
@@ -84,7 +101,8 @@ class SWD_OT_enable_draw(Operator):
 
     def execute(self, context):
         global sw_coordlist
-        global handle
+        global handle_dope
+        global handle_graph
         global image
         global sw_start
         global sw_end
@@ -92,22 +110,45 @@ class SWD_OT_enable_draw(Operator):
         # or custom prop
         # or types ?
 
-        # disable handle if launched
-        if handle:
-            bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle, 'WINDOW')
+        # disable handle_dope if launched
+        if handle_dope:
+            bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle_dope, 'WINDOW')
+        if handle_graph:
+            bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
 
+        
         strip = context.scene.sequence_editor.active_strip
+        all_sound_strips = [s for s in context.scene.sequence_editor.sequences if s.type == 'SOUND']
+        if len(all_sound_strips) == 1:
+            strip = all_sound_strips[0]
         if not strip:
             self.report({'ERROR'}, 'No active strip')
             return ({'CANCELLED'})
         if strip.type != 'SOUND':
             self.report({'ERROR'}, 'active VSE strip is not sound type')
             return ({'CANCELLED'})
+        
+
         sw_start = strip.frame_final_start
         sw_end = strip.frame_final_end
         sfp = os.path.abspath(bpy.path.abspath(strip.sound.filepath))
         
         sfp = Path(sfp)
+
+        if not sfp.exists():
+            if strip.packed_file:
+                # TODO need to support auto-export/unpack
+                self.report({'ERROR'}, 'Sound strip must be unpacked to be used')
+                return ({'CANCELLED'})
+            else:
+                self.report({'ERROR'}, f'Sound not found at: {sfp}')
+                return ({'CANCELLED'})
+
+        if strip.mute:
+            self.report({'WARNING'}, f'Used sound strip is muted : {strip.name}')
+        else:
+            self.report({'INFO'}, f'Wave from: {strip.name}')
+
         print('sfp: ', sfp)
         sname = 'waveform.png' # sfp.stem + '_waveform'
         
@@ -121,19 +162,18 @@ class SWD_OT_enable_draw(Operator):
         # scale=lin <- defaut is Fine
         # filter=peak not working yet filter must be dealt differently
 
-        # TODO Optional : separated left right to top-bottom of the area with 
         # split_channels=1 <- use defaut (do not split except if needed)
         
         ## color@0.1 <-- alpha a 10%
         # :draw=full (else scale) # seems to clear line border
 
-        # TODO save in OS temp folder
-
         # COMPAND off :,compand=gain=-6 (less accurate wave but less flat... fo not seem worthy)
         # MONO out : [0:a]aformat=channel_layouts=mono
 
+
+        cmd = ['ffmpeg',]
         if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
-            print('cutted sound')
+            print('Trimmed sound')
             # need to calculate the crop for command
             # Get sound full time
             # fulltime = strip.frame_duration * context.scene.render.fps
@@ -141,29 +181,25 @@ class SWD_OT_enable_draw(Operator):
             # duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
             duration = strip.frame_final_duration / context.scene.render.fps # -t
             
-            cmd = ['ffmpeg',
+            cmd += [
             '-ss', f'{timein:.2f}',
             '-t', f'{duration:.2f}',
-            '-i', str(sfp), 
-            '-hide_banner', '-loglevel', 'error',
-            '-filter_complex', 
-            "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
-            '-frames:v', '1', '-y', str(ifp)]
+            ]
+        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
+        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+        cmd += ['-i', str(sfp), 
+        '-hide_banner', '-loglevel', 'error',
+        '-filter_complex', 
+        "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=3D82B1:draw=full,crop=iw:ih/2:0:0", 
+        '-frames:v', '1', '-y', str(ifp)]
 
-            # print('timein: ', timein)
-            # print('duration: ', duration)
-        else:
-            print('plain sound')
-            # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
-            # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
-            # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
-            cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
-            cmd = ['ffmpeg', '-i', str(sfp), 
-            '-hide_banner', '-loglevel', 'error',
-            '-filter_complex', 
-            "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=7FB3CE:draw=full,crop=iw:ih/2:0:0", 
-            '-frames:v', '1', '-y', str(ifp)]
-
+        # blue clear 7FB3CE
+        # 3D82B1
+        # 30668B
+        # 244D69
+        # 1A374B        
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=4000x1600", '-frames:v', '1', '-y', str(ifp)]
         print('\ncmd:', ' '.join(list(map(str, cmd)))) # print final cmd
         
@@ -207,7 +243,10 @@ class SWD_OT_enable_draw(Operator):
         view_type = bpy.types.SpaceDopeSheetEditor
         spacetype = 'WINDOW' # 'PREVIEW'
         args = (self, context)
-        handle = view_type.draw_handler_add(
+        handle_dope = view_type.draw_handler_add(
+                draw_callback_px, args, spacetype, 'POST_PIXEL')
+        
+        handle_graph = bpy.types.SpaceGraphEditor.draw_handler_add(
                 draw_callback_px, args, spacetype, 'POST_PIXEL')
 
         # store ??
@@ -219,9 +258,18 @@ class SWD_OT_enable_draw(Operator):
 
 
 def disable_waveform_draw_handler():
-    global handle
-    if handle:
-        bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle, 'WINDOW')
+    global handle_dope
+    global handle_graph
+    stopped = []
+    if handle_dope:
+        bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle_dope, 'WINDOW')
+        handle_dope = None
+        stopped.append('dopesheet display')
+    if handle_graph:
+        bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
+        handle_graph = None
+        stopped.append('graph display')
+    return stopped
 
 class SWD_OT_disable_draw(Operator):
     bl_idname = "anim.disable_draw"
@@ -231,16 +279,15 @@ class SWD_OT_disable_draw(Operator):
 
     def execute(self, context):
         global sw_coordlist
-        global handle
-        if handle:
-            disable_waveform_draw_handler()
-        else:
+        # global handle_dope
+        # global handle_dope
+        stopped = disable_waveform_draw_handler()
+        if not stopped:
             self.report({'WARNING'}, 'Handler already disable')
         ## with normal handler
         # if 'name' in [hand.__name__ for hand in bpy.app.handlers.save_pre]:
-        #     bpy.app.handlers.save_pre.remove(name)
+        #     bpy.app.handle_dopers.save_pre.remove(name)
 
-        handle = None
         return {'FINISHED'}
 
 
