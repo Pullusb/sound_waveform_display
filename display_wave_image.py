@@ -136,7 +136,7 @@ class SWD_OT_enable_draw(Operator):
         sfp = Path(sfp)
 
         if not sfp.exists():
-            if strip.packed_file:
+            if strip.sound.packed_file:
                 # TODO need to support auto-export/unpack
                 self.report({'ERROR'}, 'Sound strip must be unpacked to be used')
                 return ({'CANCELLED'})
