@@ -1,10 +1,10 @@
-# PROJ
+# Display Sound Waveform
 
-Same description as the addon
+Display sound waveform in animation editors
 
 <!-- /!\ Alpha, work in progress -->
 
-**[Download latest](https://github.com/Pullusb/REPO_NAME/archive/master.zip)**
+<!-- **[Download latest](https://github.com/Pullusb/REPO_NAME/archive/master.zip)** -->
 
 <!-- ### [Demo Youtube]() -->
 
@@ -19,7 +19,7 @@ Quick usage description
 
 ### Where ?
 
-Where is the stuff in UI or shortcut
+Dopesheet and Graph editor 'N' panel
 
 <!-- TODO 
 

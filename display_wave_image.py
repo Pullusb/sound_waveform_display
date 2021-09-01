@@ -16,6 +16,13 @@ image = None
 sw_start = 0
 sw_end = 100
 
+def refresh():
+    for window in bpy.context.window_manager.windows:
+        screen = window.screen
+        for area in screen.areas:
+            if area.type in ('GRAPH_EDITOR',  'DOPESHEET_EDITOR'):
+                area.tag_redraw()
+
 def draw_callback_px(self, context):
     '''Draw callback use by modal to draw in viewport'''
     if context.area.type not in ('DOPESHEET_EDITOR', 'GRAPH_EDITOR'):
@@ -249,6 +256,7 @@ class SWD_OT_enable_draw(Operator):
         handle_graph = bpy.types.SpaceGraphEditor.draw_handler_add(
                 draw_callback_px, args, spacetype, 'POST_PIXEL')
 
+        refresh()
         # store ??
         # bpy.types.ViewLayer.sw_viewtype = 'bpy.types.SpaceDopeSheetEditor'
         # bpy.types.ViewLayer.sw_spacetyper = 'WINDOW'
@@ -269,6 +277,7 @@ def disable_waveform_draw_handler():
         bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
         handle_graph = None
         stopped.append('graph display')
+    refresh()
     return stopped
 
 class SWD_OT_disable_draw(Operator):

@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- ## [Unreleased] -->
 
 
+## [0.1.9] - 2021-09-02
+
+### Fixed
+- refresh draw when toggling on off
+
 ## [0.1.8] - 2021-07-26
 
 ### Added
