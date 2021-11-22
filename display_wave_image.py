@@ -179,19 +179,28 @@ class SWD_OT_enable_draw(Operator):
 
 
         cmd = ['ffmpeg',]
+        prefs = get_addon_prefs()
+        if prefs.path_to_ffmpeg:
+            cmd = [prefs.path_to_ffmpeg] # replace ffmpeg bin
+
         if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
             print('Trimmed sound')
             # need to calculate the crop for command
             # Get sound full time
-            # fulltime = strip.frame_duration * context.scene.render.fps
+            fulltime = strip.frame_duration * context.scene.render.fps
+
             timein = strip.frame_offset_start / context.scene.render.fps # -ss
+
             # duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
             duration = strip.frame_final_duration / context.scene.render.fps # -t
-            
-            cmd += [
-            '-ss', f'{timein:.2f}',
-            '-t', f'{duration:.2f}',
-            ]
+
+            if timein != 0:
+                cmd += ['-ss', f'{timein:.2f}']
+                print(f'Cutted start at {timein:.2f}')
+            if duration != fulltime:
+                cmd += ['-t', f'{duration:.2f}']
+                print(f'reduced duaration to {duration:.2f}')
+
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]

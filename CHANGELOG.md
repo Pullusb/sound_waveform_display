@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- ## [Unreleased] -->
 
 
+## [0.2.0] - 2021-11-22
+
+### Added
+- manual ffmpeg bin path in preferences when not in Path
+- ffmpeg in PATH checker button in prefs
+
 ## [0.1.9] - 2021-09-02
 
 ### Fixed

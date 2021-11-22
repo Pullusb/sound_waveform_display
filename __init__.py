@@ -2,10 +2,10 @@ bl_info = {
     "name": "Sound Waveform Display",
     "description": "Display waveform in dopesheet",
     "author": "Samuel Bernou",
-    "version": (0, 1, 9),
+    "version": (0, 2, 0),
     "blender": (2, 92, 0),
     "location": "View3D",
-    "warning": "WIP",
+    "warning": "",
     "doc_url": "",
     "category": "Animation" }
 
@@ -24,7 +24,7 @@ def register():
         return
 
     properties.register()
-    # preferences.register()
+    preferences.register()
     # ops_display.register()
     display_wave_image.register()
     panels.register()
@@ -37,7 +37,7 @@ def unregister():
     panels.unregister()
     display_wave_image.unregister()
     # ops_display.unregister()
-    # preferences.unregister()
+    preferences.unregister()
     properties.unregister()
 
 
