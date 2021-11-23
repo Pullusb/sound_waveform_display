@@ -1,4 +1,8 @@
 import bpy
+import sys
+import shutil
+import zipfile
+from pathlib import Path
 from bpy.props import (FloatProperty,
                         BoolProperty,
                         EnumProperty,
@@ -39,6 +43,79 @@ class SWD_OT_check_ffmpeg(bpy.types.Operator):
     def execute(self, context):
         return {'FINISHED'}
 
+## download ffmpeg
+
+def dl_url(url, dest):
+    '''download passed url to dest file (include filename)'''
+    import urllib.request
+    import time
+    start_time = time.time()
+    with urllib.request.urlopen(url) as response, open(dest, 'wb') as out_file:
+        shutil.copyfileobj(response, out_file)
+    print(f"Download time {time.time() - start_time:.2f}s",)
+
+def unzip(zip_path, extract_dir_path):
+    '''Get a zip path and a directory path to extract to'''
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_dir_path)
+
+class SWD_OT_download_ffmpeg(bpy.types.Operator):
+    """Download if ffmpeg is in path"""
+    bl_idname = "swd.download_ffmpeg"
+    bl_label = "Download ffmpeg"
+    bl_options = {'REGISTER', 'INTERNAL'}
+    
+    def invoke(self, context, event):
+        # Check if an ffmpeg version is already in addon path
+        addon_loc = Path(__file__).parent
+        self.ff_zip = addon_loc / 'ffmpeg.zip'
+        self.ffbin = addon_loc / 'ffmpeg.exe'
+        self.exists = self.ffbin.exists()
+        return context.window_manager.invoke_props_dialog(self, width=500)
+    
+    def draw(self, context):
+        layout = self.layout
+        # layout.label(text='This action will download an ffmpeg release from ffmpeg repository')
+        col = layout.column()
+        if self.exists:
+            col.label(text='ffmpeg is already in addon folder, delete and re-download ? (~90 Mo)', icon='INFO')
+        else:
+            col.label(text='This will download ffmpeg release from ffmpeg github page in addon folder (~90 Mo)', icon='INFO')
+            col.label(text='Would you like to continue ?')
+
+    def execute(self, context):
+        if self.exists:
+            self.ffbin.unlink()
+        
+        ## hardcoded compatible release
+        release_url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-11-23-12-19/ffmpeg-n4.4.1-2-gcc33e73618-win64-gpl-4.4.zip' 
+        dl_url(release_url, str(self.ff_zip))
+
+        with zipfile.ZipFile(str(self.ff_zip), 'r') as zip_ref:
+            zip_ffbin = None
+            for f in zip_ref.infolist():
+                if Path(f.filename).name == 'ffmpeg.exe':
+                    zip_ffbin = f
+                    break
+    
+            if zip_ffbin:
+                zip_ffbin.filename = Path(zip_ffbin.filename).name
+                zip_ref.extract(zip_ffbin, path=str(self.ffbin.parent)) # extract(self, member, path=None, pwd=None)
+
+        if not zip_ffbin:
+            self.report({'ERROR'}, 'ffmpeg not found in downloaded zip')
+        
+        if self.ff_zip.exists():
+            self.ff_zip.unlink()
+        
+        if self.ffbin.exists():
+            prefs = get_addon_prefs()
+            prefs.path_to_ffmpeg = str(self.ffbin.resolve())
+
+        self.report({'INFO'}, f'Installed: {self.ffbin.resolve()}')
+        return {'FINISHED'}
+
+
 class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
     bl_idname = __package__
     # bl_idname = __name__.split('.')[0] # or with: os.path.splitext(__name__)[0]
@@ -57,8 +134,11 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         
         row = col.row()
         row.label(text="This functionallity need a recent ffmpeg binary")
-        row.operator('wm.url_open', text='ffmpeg download page', icon='URL').url = 'https://www.ffmpeg.org/download.html'
-        
+
+        row.operator('wm.url_open', text='FFmpeg Download Page', icon='URL').url = 'https://www.ffmpeg.org/download.html'
+        if sys.platform.startswith('win'):
+            col.operator('swd.download_ffmpeg', text='Auto-install FFmpeg (windows)', icon='IMPORT')
+
         row = col.row()
         row.label(text="Leave field empty if ffmpeg is in system PATH")
         row.operator('swd.check_ffmpeg', text='Check if ffmpeg in PATH', icon='PLUGIN')
@@ -74,6 +154,7 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
 
 classes=(
 SWD_OT_check_ffmpeg,
+SWD_OT_download_ffmpeg,
 SWD_sound_waveform_display_addonpref,
 )
 

@@ -1,4 +1,4 @@
-import bpy, os
+import bpy, os, sys, shutil
 from bpy.types import Operator
 from pathlib import Path
 import gpu
@@ -116,6 +116,23 @@ class SWD_OT_enable_draw(Operator):
         # bake the coords in a global variable ?
         # or custom prop
         # or types ?
+        
+        cmd = ['ffmpeg',]
+        prefs = get_addon_prefs()
+        if prefs.path_to_ffmpeg:
+            cmd = [prefs.path_to_ffmpeg] # replace ffmpeg bin
+        else:
+            if not shutil.which('ffmpeg'):
+                self.report({'ERROR'}, 'Need ffmpeg to work\nLook in addon preferences for detail')
+                # TODO pop msg_box auto-open addon preferences with addon expanded
+                return ({'CANCELLED'})
+
+        ## auto-override ffmpeg bin if one in folder ?
+        # else:
+        #     if sys.platform.startswith('win'):
+        #         winbin_path = Path(__file__).paremt / 'ffmpeg.exe'
+        #         if winbin_path.exists():
+        #             cmd = [str(winbin_path)] # replace ffmpeg bin
 
         # disable handle_dope if launched
         if handle_dope:
@@ -178,10 +195,6 @@ class SWD_OT_enable_draw(Operator):
         # MONO out : [0:a]aformat=channel_layouts=mono
 
 
-        cmd = ['ffmpeg',]
-        prefs = get_addon_prefs()
-        if prefs.path_to_ffmpeg:
-            cmd = [prefs.path_to_ffmpeg] # replace ffmpeg bin
 
         if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
             print('Trimmed sound')
