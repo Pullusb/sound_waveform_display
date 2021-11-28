@@ -2,7 +2,7 @@ bl_info = {
     "name": "Sound Waveform Display",
     "description": "Display waveform in dopesheet",
     "author": "Samuel Bernou",
-    "version": (0, 2, 1),
+    "version": (0, 2, 2),
     "blender": (2, 92, 0),
     "location": "View3D",
     "warning": "",

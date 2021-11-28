@@ -5,7 +5,7 @@ import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
 from time import time
-from .preferences import get_addon_prefs
+from .preferences import get_addon_prefs, open_addon_prefs
 import subprocess
 import tempfile
 
@@ -15,6 +15,40 @@ handle_graph = None
 image = None
 sw_start = 0
 sw_end = 100
+
+def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
+    '''Show message box with element passed as string or list
+    if _message if a list of lists:
+        if sublist have 2 element:
+            considered a label [text,icon]
+        if sublist have 3 element:
+            considered as an operator [ops_id_name, text, icon]
+    '''
+
+    def draw(self, context):
+        for l in _message:
+            if isinstance(l, str):
+                self.layout.label(text=l)
+            else:
+                if len(l) == 2: # label with icon
+                    self.layout.label(text=l[0], icon=l[1])
+                elif len(l) == 3: # ops
+                    self.layout.operator_context = "INVOKE_DEFAULT"
+                    self.layout.operator(l[0], text=l[1], icon=l[2], emboss=False) # <- True highligh the entry
+    
+    if isinstance(_message, str):
+        _message = [_message]
+    bpy.context.window_manager.popup_menu(draw, title = _title, icon = _icon)
+
+class SWD_OT_open_addon_prefs(Operator):
+    bl_idname = "swd.open_addon_prefs"
+    bl_label = "Open Addon Prefs"
+    bl_description = "Open user preferences window in addon tab and prefill the search with addon name"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        open_addon_prefs()
+        return {'FINISHED'}
 
 def refresh():
     for window in bpy.context.window_manager.windows:
@@ -116,16 +150,27 @@ class SWD_OT_enable_draw(Operator):
         # bake the coords in a global variable ?
         # or custom prop
         # or types ?
-        
-        cmd = ['ffmpeg',]
+
+
         prefs = get_addon_prefs()
+        ffbin = Path(__file__).parent / 'ffmpeg.exe'
+            
+        cmd = ['ffmpeg',]
+        
         if prefs.path_to_ffmpeg:
             cmd = [prefs.path_to_ffmpeg] # replace ffmpeg bin
+        
+        elif ffbin.exists:
+            cmd = [str(ffbin)]
+        
         else:
             if not shutil.which('ffmpeg'):
-                self.report({'ERROR'}, 'Need ffmpeg to work\nLook in addon preferences for detail')
-                # TODO pop msg_box auto-open addon preferences with addon expanded
-                return ({'CANCELLED'})
+                show_message_box(_title = "No ffmpeg found", _icon = 'INFO',
+                    _message =[
+                            "ffmpeg is needed to display wave, see addon prefs",
+                            ["swd.open_addon_prefs", "Click here to open addon prefs", "PREFERENCES"] # TOOL_SETTINGS
+                        ])
+                return {'CANCELLED'}
 
         ## auto-override ffmpeg bin if one in folder ?
         # else:
@@ -325,6 +370,7 @@ class SWD_OT_disable_draw(Operator):
 classes=(
 # SWD_OT_opsname,
 # SWD_OT_timeline_draw_test,
+SWD_OT_open_addon_prefs,
 SWD_OT_enable_draw,
 SWD_OT_disable_draw,
 )

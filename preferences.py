@@ -21,6 +21,17 @@ def get_addon_prefs():
     addon_prefs = preferences.addons[addon_name].preferences
     return (addon_prefs)
 
+def open_addon_prefs():
+    '''Open addon prefs windows with focus on current addon'''
+    from .__init__ import bl_info
+    wm = bpy.context.window_manager
+    wm.addon_filter = 'All'
+    if not 'COMMUNITY' in  wm.addon_support: # reactivate community
+        wm.addon_support = set([i for i in wm.addon_support] + ['COMMUNITY'])
+    wm.addon_search = bl_info['name']
+    bpy.context.preferences.active_section = 'ADDONS'
+    bpy.ops.preferences.addon_expand(module=__package__)
+    bpy.ops.screen.userpref_show('INVOKE_DEFAULT')
 
 class SWD_OT_check_ffmpeg(bpy.types.Operator):
     """check if ffmpeg is in path"""
@@ -29,16 +40,29 @@ class SWD_OT_check_ffmpeg(bpy.types.Operator):
     bl_options = {'REGISTER', 'INTERNAL'}
     
     def invoke(self, context, event):
+        # check path command
         import  shutil
-        self.ok = shutil.which('ffmpeg')
+        self.sys_path_ok = shutil.which('ffmpeg')
+        
+        # check windows exe
+        self.local_ffmpeg = False
+        self.is_window_os = sys.platform.startswith('win')
+        if self.is_window_os:
+            ffbin = Path(__file__).parent / 'ffmpeg.exe'
+            self.local_ffmpeg = ffbin.exists()
+
         return context.window_manager.invoke_props_dialog(self, width=250)
     
     def draw(self, context):
         layout = self.layout
-        if self.ok:
-            layout.label(text='Ok ! ffmpeg is in system PATH', icon='INFO')
+
+        if self.local_ffmpeg:
+            layout.label(text='ffmpeg.exe found in addon folder (this binary will be used)', icon='CHECKMARK')
+        
+        if self.sys_path_ok:
+            layout.label(text='ffmpeg is in system PATH', icon='CHECKMARK')
         else:
-            layout.label(text='ffmeg is not in system PATH', icon='CANCEL')
+            layout.label(text='ffmeg is not in system PATH', icon='X') # CANCEL
 
     def execute(self, context):
         return {'FINISHED'}
