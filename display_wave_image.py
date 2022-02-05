@@ -158,9 +158,14 @@ class SWD_OT_enable_draw(Operator):
         cmd = ['ffmpeg',]
         
         if prefs.path_to_ffmpeg:
-            cmd = [prefs.path_to_ffmpeg] # replace ffmpeg bin
+            ffpath = Path(prefs.path_to_ffmpeg)
+            if ffpath.exists() and ffpath.is_file():
+                cmd = [prefs.path_to_ffmpeg] # replace ffmpeg bin
+            else:
+                self.report({'ERROR'}, "Invalid path to ffmpeg in the addon preference")
+                return {'CANCELLED'}      
         
-        elif ffbin.exists:
+        elif ffbin.exists():
             cmd = [str(ffbin)]
         
         else:
@@ -239,8 +244,6 @@ class SWD_OT_enable_draw(Operator):
         # COMPAND off :,compand=gain=-6 (less accurate wave but less flat... fo not seem worthy)
         # MONO out : [0:a]aformat=channel_layouts=mono
 
-
-
         if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
             print('Trimmed sound')
             # need to calculate the crop for command
@@ -257,12 +260,13 @@ class SWD_OT_enable_draw(Operator):
                 print(f'Cutted start at {timein:.2f}')
             if duration != fulltime:
                 cmd += ['-t', f'{duration:.2f}']
-                print(f'reduced duaration to {duration:.2f}')
+                print(f'reduced duration to {duration:.2f}')
 
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
+        print('sfp: ', sfp)
         cmd += ['-i', str(sfp), 
         '-hide_banner', '-loglevel', 'error',
         '-filter_complex', 
