@@ -101,16 +101,12 @@ def draw_callback_px(self, context):
     if image.gl_load():
         raise Exception()
 
-    # TODO : modulate opacity
-    # TODO : adjust height with a interface linked slider
-
-
     bgl.glEnable(bgl.GL_BLEND) # bgl.GL_SRGB8_ALPHA8
     # bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
+    ## TODO:tweak transparency
 
-    ## TODO how to tweak transparency
     # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, size, size, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, pixels)
     # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, sx, sy, 0, bgl.GL_RGBA, bgl.GL_FLOAT, buf)
 
@@ -147,10 +143,6 @@ class SWD_OT_enable_draw(Operator):
         global image
         global sw_start
         global sw_end
-        # bake the coords in a global variable ?
-        # or custom prop
-        # or types ?
-
 
         prefs = get_addon_prefs()
         ffbin = Path(__file__).parent / 'ffmpeg.exe'
@@ -176,13 +168,6 @@ class SWD_OT_enable_draw(Operator):
                             ["swd.open_addon_prefs", "Click here to open addon prefs", "PREFERENCES"] # TOOL_SETTINGS
                         ])
                 return {'CANCELLED'}
-
-        ## auto-override ffmpeg bin if one in folder ?
-        # else:
-        #     if sys.platform.startswith('win'):
-        #         winbin_path = Path(__file__).paremt / 'ffmpeg.exe'
-        #         if winbin_path.exists():
-        #             cmd = [str(winbin_path)] # replace ffmpeg bin
 
         # disable handle_dope if launched
         if handle_dope:
@@ -241,7 +226,7 @@ class SWD_OT_enable_draw(Operator):
         ## color@0.1 <-- alpha a 10%
         # :draw=full (else scale) # seems to clear line border
 
-        # COMPAND off :,compand=gain=-6 (less accurate wave but less flat... fo not seem worthy)
+        # COMPAND off :,compand=gain=-6 (less accurate wave but less flat... do not seem worthy)
         # MONO out : [0:a]aformat=channel_layouts=mono
 
         if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
@@ -252,8 +237,10 @@ class SWD_OT_enable_draw(Operator):
 
             timein = strip.frame_offset_start / context.scene.render.fps # -ss
 
-            # duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
+            # old: duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
+            
             duration = strip.frame_final_duration / context.scene.render.fps # -t
+            # duration = (strip.frame_final_duration / context.scene.render.fps) + 0.1 # TEST
 
             if timein != 0:
                 cmd += ['-ss', f'{timein:.2f}']
@@ -261,6 +248,11 @@ class SWD_OT_enable_draw(Operator):
             if duration != fulltime:
                 cmd += ['-t', f'{duration:.2f}']
                 print(f'reduced duration to {duration:.2f}')
+
+        # else:
+        #     ## Try to fix x offset error
+        #     duration = (strip.frame_final_duration / context.scene.render.fps) + 0.1
+        #     cmd += ['-t', f'{duration:.2f}']
 
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
@@ -270,7 +262,8 @@ class SWD_OT_enable_draw(Operator):
         cmd += ['-i', str(sfp), 
         '-hide_banner', '-loglevel', 'error',
         '-filter_complex', 
-        "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=3D82B1:draw=full,crop=iw:ih/2:0:0", 
+        "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=3D82B1:draw=full,crop=iw:ih/2:0:0",
+        # "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=3D82B1", 
         '-frames:v', '1', '-y', str(ifp)]
 
         # blue clear 7FB3CE
@@ -297,8 +290,8 @@ class SWD_OT_enable_draw(Operator):
             bpy.data.images.remove(image)
 
         image = bpy.data.images.load(str(ifp), check_existing=False)
+        
         # TODO background mixdown of scene sound in temp
-
         
         height = ((sw_end - sw_start) * image.size[1]) // image.size[0]
         half = height // 2
@@ -343,11 +336,11 @@ def disable_waveform_draw_handler():
     if handle_dope:
         bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle_dope, 'WINDOW')
         handle_dope = None
-        stopped.append('dopesheet display')
+        stopped.append('Dopesheet display')
     if handle_graph:
         bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
         handle_graph = None
-        stopped.append('graph display')
+        stopped.append('Graph display')
     refresh()
     return stopped
 
@@ -359,11 +352,10 @@ class SWD_OT_disable_draw(Operator):
 
     def execute(self, context):
         global sw_coordlist
-        # global handle_dope
-        # global handle_dope
+
         stopped = disable_waveform_draw_handler()
         if not stopped:
-            self.report({'WARNING'}, 'Handler already disable')
+            self.report({'WARNING'}, 'Already disabled')
         ## with normal handler
         # if 'name' in [hand.__name__ for hand in bpy.app.handlers.save_pre]:
         #     bpy.app.handle_dopers.save_pre.remove(name)
@@ -372,8 +364,6 @@ class SWD_OT_disable_draw(Operator):
 
 
 classes=(
-# SWD_OT_opsname,
-# SWD_OT_timeline_draw_test,
 SWD_OT_open_addon_prefs,
 SWD_OT_enable_draw,
 SWD_OT_disable_draw,
