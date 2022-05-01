@@ -1,20 +1,19 @@
 import bpy, os, sys, shutil
-from bpy.types import Operator
-from pathlib import Path
+import subprocess
+import tempfile
 import gpu
 import bgl
 from gpu_extras.batch import batch_for_shader
+from bpy.types import Operator
+from pathlib import Path
 from time import time
 from .preferences import get_addon_prefs, open_addon_prefs
-import subprocess
-import tempfile
+from . import fn
 
 sw_coordlist = []
 handle_dope = None
 handle_graph = None
 image = None
-sw_start = 0
-sw_end = 100
 
 def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
     '''Show message box with element passed as string or list
@@ -35,7 +34,7 @@ def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
                 elif len(l) == 3: # ops
                     self.layout.operator_context = "INVOKE_DEFAULT"
                     self.layout.operator(l[0], text=l[1], icon=l[2], emboss=False) # <- True highligh the entry
-    
+
     if isinstance(_message, str):
         _message = [_message]
     bpy.context.window_manager.popup_menu(draw, title = _title, icon = _icon)
@@ -76,7 +75,7 @@ def draw_callback_px(self, context):
 
     margin = 12 * context.preferences.view.ui_scale
     # print('sw_coordlist: ', sw_coordlist)
-    
+
     if not context.region:
         return
     coords = [\
@@ -97,7 +96,7 @@ def draw_callback_px(self, context):
             "texCoord": ((0, 0), (1, 0), (1, 1), (0, 1)),
         },
     )
-    
+
     if image.gl_load():
         raise Exception()
 
@@ -123,7 +122,7 @@ def draw_callback_px(self, context):
     shader.uniform_int("image", 0)
     batch.draw(shader)
     # self.batch_line.draw(shader)
-    
+
     # restore opengl defaults
     # bgl.glLineWidth(1)
     # bgl.glDisable(bgl.GL_LINE_SMOOTH)
@@ -141,14 +140,12 @@ class SWD_OT_enable_draw(Operator):
         global handle_dope
         global handle_graph
         global image
-        global sw_start
-        global sw_end
 
         prefs = get_addon_prefs()
         ffbin = Path(__file__).parent / 'ffmpeg.exe'
-            
+
         cmd = ['ffmpeg',]
-        
+
         if prefs.path_to_ffmpeg:
             ffpath = Path(prefs.path_to_ffmpeg)
             if ffpath.exists() and ffpath.is_file():
@@ -156,10 +153,10 @@ class SWD_OT_enable_draw(Operator):
             else:
                 self.report({'ERROR'}, "Invalid path to ffmpeg in the addon preference")
                 return {'CANCELLED'}      
-        
+
         elif ffbin.exists():
             cmd = [str(ffbin)]
-        
+
         else:
             if not shutil.which('ffmpeg'):
                 show_message_box(_title = "No ffmpeg found", _icon = 'INFO',
@@ -175,44 +172,104 @@ class SWD_OT_enable_draw(Operator):
         if handle_graph:
             bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
 
-        
+        target_range = context.scene.swd_settings.range
+
         strip = context.scene.sequence_editor.active_strip
         all_sound_strips = [s for s in context.scene.sequence_editor.sequences if s.type == 'SOUND']
-        if len(all_sound_strips) == 1:
-            strip = all_sound_strips[0]
-        if not strip:
-            self.report({'ERROR'}, 'No active strip')
-            return ({'CANCELLED'})
-        if strip.type != 'SOUND':
-            self.report({'ERROR'}, 'active VSE strip is not sound type')
-            return ({'CANCELLED'})
-        
 
-        sw_start = strip.frame_final_start
-        sw_end = strip.frame_final_end
-        sfp = os.path.abspath(bpy.path.abspath(strip.sound.filepath))
-        
-        sfp = Path(sfp)
+        if not all_sound_strips:
+            self.report({'ERROR'}, 'No sound strip in sequencer')
+            return {'CANCELLED'}
 
-        if not sfp.exists():
-            if strip.sound.packed_file:
-                # TODO need to support auto-export/unpack
-                self.report({'ERROR'}, 'Sound strip must be unpacked to be used')
-                return ({'CANCELLED'})
-            else:
-                self.report({'ERROR'}, f'Sound not found at: {sfp}')
-                return ({'CANCELLED'})
+        if target_range == 'SELECT':
+            if len(all_sound_strips) == 1:
+                strip = all_sound_strips[0]
 
-        if strip.mute:
-            self.report({'WARNING'}, f'Used sound strip is muted : {strip.name}')
+            if not strip:
+                self.report({'ERROR'}, 'No active strip')
+                return {'CANCELLED'}
+
+            if strip.type != 'SOUND':
+                self.report({'ERROR'}, 'active VSE strip is not sound type')
+                return {'CANCELLED'}
+
+        print('--- Display Sound Waveform')
+
+        temp_dir = Path(tempfile.gettempdir())
+        sname = 'waveform.png'
+        tmp_sound_name = 'tmp_scene_mixdown.wav'
+        ifp = temp_dir / sname # temp files
+        mixdown_path = temp_dir / tmp_sound_name
+
+        force_mix = True # Way safer to always use mixdown !
+
+        # use mixdown
+        # selected_strips = [s for s in all_sound_strips if s.select]
+        if force_mix: #  or len(selected_strips) > 1 or (strip.frame_offset_start != 0 or strip.frame_offset_end != 0)
+
+            ## start/end  returned by mixdown range
+            sw_start, sw_end = fn.mixdown(filepath=mixdown_path, mode=context.scene.swd_settings.range)
+            if sw_start is None:
+                self.report({'ERROR'}, 'Problem mixing down sound to load waveform')
+                return {'CANCELLED'}
+            sfp = mixdown_path
+
         else:
-            self.report({'INFO'}, f'Wave from: {strip.name}')
+            # Directly use active strip
+            sw_start = strip.frame_final_start
+            sw_end = strip.frame_final_end
+            sfp = os.path.abspath(bpy.path.abspath(strip.sound.filepath))
 
-        print('sfp: ', sfp)
-        sname = 'waveform.png' # sfp.stem + '_waveform'
-        
-        # ifp = sfp.parent / sname # same folder as the source video
-        ifp = Path(tempfile.gettempdir()) / sname # temp files
+            sfp = Path(sfp)
+
+            if not sfp.exists():
+                if strip.sound.packed_file:
+                    self.report({'ERROR'}, 'Sound strip must be unpacked to be used')
+                    return {'CANCELLED'}
+                else:
+                    self.report({'ERROR'}, f'Sound not found at: {sfp}')
+                    return {'CANCELLED'}
+
+            if strip.mute:
+                self.report({'WARNING'}, f'Used sound strip is muted : {strip.name}')
+            else:
+                self.report({'INFO'}, f'Wave from: {strip.name}')
+
+            # ifp = sfp.parent / sname # same folder as the source video
+
+            '''# # this condition should enter mixdown above
+            if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
+                print('Trimmed sound')
+                # need to calculate the crop for command
+                # Get sound full time
+                fulltime = strip.frame_duration * context.scene.render.fps
+
+                timein = strip.frame_offset_start / context.scene.render.fps # -ss
+
+                # old: duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
+
+                duration = strip.frame_final_duration / context.scene.render.fps # -t
+                # timeout = timein + (strip.frame_final_duration / context.scene.render.fps) # -to
+
+                duration = (strip.frame_final_duration / context.scene.render.fps) + 1 # TEST
+
+                if timein != 0:
+                    cmd += ['-ss', f'{timein:.3f}']
+                    print(f'Cutted start at {timein:.3f}')
+                if duration != fulltime:
+                    cmd += ['-t', f'{duration:.3f}']
+                    # cmd += ['-to', f'{timeout:.3f}'] # define end time instead of duration
+                    print(f'reduced duration to {duration:.3f}')
+            '''
+
+
+        print('sound path: ', sfp)
+        # print('sw_start, sw_end: ', sw_start, sw_end)
+
+        # else:
+        #     ## Try to fix x offset error
+        #     duration = (strip.frame_final_duration / context.scene.render.fps) + 0.1
+        #     cmd += ['-t', f'{duration:.2f}']
 
         # color : https://ffmpeg.org/ffmpeg-utils.html#Color
         # wave options : https://ffmpeg.org/ffmpeg-filters.html#showwaves
@@ -222,43 +279,17 @@ class SWD_OT_enable_draw(Operator):
         # filter=peak not working yet filter must be dealt differently
 
         # split_channels=1 <- use defaut (do not split except if needed)
-        
+
         ## color@0.1 <-- alpha a 10%
         # :draw=full (else scale) # seems to clear line border
 
         # COMPAND off :,compand=gain=-6 (less accurate wave but less flat... do not seem worthy)
         # MONO out : [0:a]aformat=channel_layouts=mono
 
-        if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
-            print('Trimmed sound')
-            # need to calculate the crop for command
-            # Get sound full time
-            fulltime = strip.frame_duration * context.scene.render.fps
-
-            timein = strip.frame_offset_start / context.scene.render.fps # -ss
-
-            # old: duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
-            
-            duration = strip.frame_final_duration / context.scene.render.fps # -t
-            # duration = (strip.frame_final_duration / context.scene.render.fps) + 0.1 # TEST
-
-            if timein != 0:
-                cmd += ['-ss', f'{timein:.2f}']
-                print(f'Cutted start at {timein:.2f}')
-            if duration != fulltime:
-                cmd += ['-t', f'{duration:.2f}']
-                print(f'reduced duration to {duration:.2f}')
-
-        # else:
-        #     ## Try to fix x offset error
-        #     duration = (strip.frame_final_duration / context.scene.render.fps) + 0.1
-        #     cmd += ['-t', f'{duration:.2f}']
-
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
-        print('sfp: ', sfp)
         cmd += ['-i', str(sfp), 
         '-hide_banner', '-loglevel', 'error',
         '-filter_complex', 
@@ -273,26 +304,26 @@ class SWD_OT_enable_draw(Operator):
         # 1A374B        
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=4000x1600", '-frames:v', '1', '-y', str(ifp)]
         print('\ncmd:', ' '.join(list(map(str, cmd)))) # print final cmd
-        
+
         t0 = time()
         ret = subprocess.call(cmd)
         if ret != 0:
             self.report({'ERROR'}, '--- problem generating sound wave image')
-            return ({'CANCELLED'})
+            return {'CANCELLED'}
 
-        print(f'Generated sound waveform: {time() - t0:.2f}s')
+        print(f'Generated sound waveform: {time() - t0:.3f}s')
         if not ifp.exists():
             self.report({'ERROR'}, f'Waveform not generated at : {ifp}')
-            return ({'CANCELLED'})
-        
+            return {'CANCELLED'}
+
         image = bpy.data.images.get(sname)
         if image:
             bpy.data.images.remove(image)
 
         image = bpy.data.images.load(str(ifp), check_existing=False)
-        
+
         # TODO background mixdown of scene sound in temp
-        
+
         height = ((sw_end - sw_start) * image.size[1]) // image.size[0]
         half = height // 2
         # print(f'image generated at {ifp}')
@@ -303,20 +334,20 @@ class SWD_OT_enable_draw(Operator):
                         (sw_end, 0),
                         (sw_end, height),
                         (sw_start, height))
-        
+
         ## half height position (if not cutted)
         # sw_coordlist = ((sw_start, -half),
         #                 (sw_end, -half),
         #                 (sw_end, half),
         #                 (sw_start, half))
-        
+
         ## enable handler
         view_type = bpy.types.SpaceDopeSheetEditor
         spacetype = 'WINDOW' # 'PREVIEW'
         args = (self, context)
         handle_dope = view_type.draw_handler_add(
                 draw_callback_px, args, spacetype, 'POST_PIXEL')
-        
+
         handle_graph = bpy.types.SpaceGraphEditor.draw_handler_add(
                 draw_callback_px, args, spacetype, 'POST_PIXEL')
 
@@ -326,6 +357,15 @@ class SWD_OT_enable_draw(Operator):
         # bpy.types.ViewLayer.sw_spacetyper = 'WINDOW'
         # bpy.types.ViewLayer.sw_handle = handle
         # print(context.view_layer.sw_handle)
+        
+        # print()
+        # ensure to delete the right one
+
+        # if sfp.exists() and sfp.name == tmp_sound_name:
+        #     try:
+        #         sfp.unlink()
+        #     except Exception as e:
+        #         print(f'! impossible to remove: {sfp}\n\n{e}')
         return {'FINISHED'}
 
 

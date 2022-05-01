@@ -6,6 +6,7 @@ from .preferences import get_addon_prefs
 def side_menu(self, context):
         layout = self.layout
 
+        layout.prop(context.scene.swd_settings, 'range')
         row = layout.row()
         # row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
         row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')

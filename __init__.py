@@ -2,16 +2,15 @@ bl_info = {
     "name": "Sound Waveform Display",
     "description": "Display selected sound waveform in timeline/dopesheet/graph",
     "author": "Samuel Bernou",
-    "version": (0, 2, 4),
+    "version": (0, 3, 0),
     "blender": (2, 93, 0),
     "location": "View3D",
-    "warning": "Beta",
+    "warning": "",
     "doc_url": "",
     "category": "Animation" }
 
 from . import properties
 from . import preferences
-from . import ops_display
 from . import display_wave_image
 from . import panels
 # from . import keymaps
@@ -25,7 +24,6 @@ def register():
 
     properties.register()
     preferences.register()
-    # ops_display.register()
     display_wave_image.register()
     panels.register()
     # keymaps.register()
@@ -36,7 +34,6 @@ def unregister():
     # keymaps.unregister()
     panels.unregister()
     display_wave_image.unregister()
-    # ops_display.unregister()
     preferences.unregister()
     properties.unregister()
 

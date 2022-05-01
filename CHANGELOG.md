@@ -5,7 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
-## [0.2.3] - 2022-02-05 01:56:07
+## [0.3.0] - 2022-05-02
+
+### Added
+- Can display mutiple selected strip
+- Target choice `Selected Strips` (default), `Unmuted Strips` or `Scene Range`
+### Changed
+- Always mixdown the sound to a temp file for result consistency
+
+## [0.2.3] - 2022-02-05
 
 ### Fixed
 - Error always trying to get ffmpeg from addon folder

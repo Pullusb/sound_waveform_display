@@ -45,23 +45,24 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
         step=3, precision=2,
         subtype='COLOR', # COLOR_GAMMA
         size=3, options={'HIDDEN'})
+
+    range : EnumProperty(
+        name="Show", description="Define what should be displayed", 
+        default='SELECTION', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('SELECTION', 'Selected Strips', 'Waveform of selected strips in VSE (even muted ones)', 0),
+            ('UNMUTED', 'Unmuted Strips', 'Display all audible strips in VSE', 1),
+            ('SCENE', 'Scene Range', 'Display VSE audio of scene range (not preview range)', 2),
+            # ('ALL', 'All Strip', '', '', 2),
+            ))
+    
+
+
     ## property with update on change
     # edit_lines_opacity : FloatProperty(
     #     name="edit lines Opacity", description="Change edit lines opacity for all grease pencils", 
     #     default=0.5, min=0.0, max=1.0, step=3, precision=2)
 
-    ## enum (with Icon)
-    # keyframe_type : EnumProperty(
-    #     name="Keyframe Filter", description="Only jump to defined keyframe type", 
-    #     default='ALL', options={'HIDDEN', 'SKIP_SAVE'},
-    #     items=(
-    #         ('ALL', 'All', '', 0), # 'KEYFRAME'
-    #         ('KEYFRAME', 'Keyframe', '', 'KEYTYPE_KEYFRAME_VEC', 1),
-    #         ('BREAKDOWN', 'Breakdown', '', 'KEYTYPE_BREAKDOWN_VEC', 2),
-    #         ('MOVING_HOLD', 'Moving Hold', '', 'KEYTYPE_MOVING_HOLD_VEC', 3),
-    #         ('EXTREME', 'Extreme', '', 'KEYTYPE_EXTREME_VEC', 4),
-    #         ('JITTER', 'Jitter', '', 'KEYTYPE_JITTER_VEC', 5),
-    #         ))
 
 
 # classes=(
