@@ -39,22 +39,44 @@ class attr_set():
 # bitrate=192,
 # split_channels=False)
 
+def get_sound_strip_in_scene_range(vse=None):
+    vse = vse or bpy.context.scene.sequence_editor
+    scn = bpy.context.scene
+    strips =  [s for s in vse.sequences if s.type == 'SOUND' \
+        and not s.mute \
+        and not (s.final_frame_end <= scn.frame_start or s.final_frame_start >= scn.frame_end)]
+    
+    return strips
+
+def get_start_end(strip_list):
+    start = min([s.frame_final_start for s in strip_list])
+    end = max([s.frame_final_end for s in strip_list])
+    return start, end
+
 def mixdown(filepath, mode='SELECT'):
     '''mode in (SELECT, UNMUTED, SCENE)'''
 
-    vse = bpy.context.scene.sequence_editor
+    scn = bpy.context.scene
+    vse = scn.sequence_editor
     if mode == 'SCENE':
         temp_changes = []
-        # TODO: optimize by placing getting leftmost and righmost uncuted strip range
+
+        # Optimise by reducing range to first/las audible strips
+        strips = get_sound_strip_in_scene_range(vse)
+        start, end = get_start_end(strips)
+        if start > scn.frame_start:
+            temp_changes.append((scn, 'frame_start', start))
+        if end > scn.frame_end:
+            temp_changes.append((scn, 'frame_end', end),)
 
     elif mode == 'UNMUTED':
         # unmuted range (no need to render the whole )
         unmuted = [s for s in vse.sequences if s.type == 'SOUND' and not s.mute]
-        start = min([s.frame_final_start for s in unmuted])
-        end = max([s.frame_final_end for s in unmuted])
+        start, end = get_start_end(unmuted)
+
         temp_changes = [
-            (bpy.context.scene, 'frame_start', start),
-            (bpy.context.scene, 'frame_end', end),
+            (scn, 'frame_start', start),
+            (scn, 'frame_end', end),
             ]
 
     else: # SELECT
@@ -62,18 +84,17 @@ def mixdown(filepath, mode='SELECT'):
         unselected_strips = [s for s in vse.sequences if s.type == 'SOUND' and not s.select]
         
         # get range
-        start = min([s.frame_final_start for s in selected_strips])
-        end = max([s.frame_final_end for s in selected_strips])
+        start, end = get_start_end(selected_strips)
 
         temp_changes = [
-            # (bpy.context.scene, 'use_preview_range', False) # not affected by preview range
-            (bpy.context.scene, 'frame_start', start),
-            (bpy.context.scene, 'frame_end', end),
+            # (scn, 'use_preview_range', False) # not affected by preview range
+            (scn, 'frame_start', start),
+            (scn, 'frame_end', end),
             ]
 
+        # mute non selected strips
         temp_changes += [(s, 'mute', True) for s in unselected_strips]
-        
-        ## unmute selected strips (disable ? cana be counter-logic for some...)
+        # unmute selected strips (can be counter-logic to some...)
         temp_changes += [(s, 'mute', False) for s in selected_strips]
 
     with attr_set(temp_changes):

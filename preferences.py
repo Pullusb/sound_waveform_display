@@ -141,12 +141,18 @@ class SWD_OT_download_ffmpeg(bpy.types.Operator):
 
 
 class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
-    bl_idname = __package__
-    # bl_idname = __name__.split('.')[0] # or with: os.path.splitext(__name__)[0]
+    bl_idname = __name__.split('.')[0]
 
     path_to_ffmpeg : StringProperty(
         name="Path to ffmpeg binary",
+        description='Set the path to ffmpeg or leave empty if ffmpeg is in your path',
         subtype='FILE_PATH')
+
+    force_mixdown : BoolProperty(
+        name="Force Audio Mixdown",
+        default=False,
+        description='Use mixdown even for displaying single audio track \
+            \nSlightly longer calculation but generally more accurate waveform')
 
     def draw(self, context):
         layout = self.layout
@@ -170,6 +176,9 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         # col.label(text="May not work if space are in path.")
         box.prop(self, "path_to_ffmpeg")
 
+        
+        box = layout.box()
+        box.prop(self, "force_mixdown")
         ## Make an auto-install (at least for windows user), maybe store bin on a public repo...
         
 
