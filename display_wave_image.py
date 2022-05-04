@@ -316,7 +316,7 @@ class SWD_OT_enable_draw(Operator):
         # 244D69
         # 1A374B        
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=4000x1600", '-frames:v', '1', '-y', str(ifp)]
-        print('\ncmd:', ' '.join(list(map(str, cmd)))) # print final cmd
+        print('cmd:', ' '.join(list(map(str, cmd)))) # print final cmd
 
         t0 = time()
         ret = subprocess.call(cmd)

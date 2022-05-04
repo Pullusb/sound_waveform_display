@@ -67,17 +67,14 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     start, end = scn.frame_start, scn.frame_end
 
     if source == 'ALL':
-        print('in all')
         # simplest, nothing to change... mixdown scene as it is
         pass
     
     elif source == 'SPEAKERS':
-        print('in speaker')
         ## Mute every audible vse strips
         temp_changes += [(s, 'mute', True) for s in vse.sequences if s.type == 'SOUND' and not s.mute]
 
     elif source == 'SEQUENCER':
-        print('in sequqencer')
         # mute speakers
         # temp_changes = [(o.data, 'muted', True) for o in scn.objects if o.type == 'SPEAKER' and not o.data.muted]
         temp_changes = [(s, 'muted', True) for s in bpy.data.speakers if not s.muted]
@@ -123,7 +120,8 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             ## unmute selected strips (can be counter-logic to some...)
             temp_changes += [(s, 'mute', False) for s in selected_strips]
 
-    for i in temp_changes: print(i) # Dbg
+    # for i in temp_changes: print(i) # Dbg
+
     with attr_set(temp_changes):
         t0 = time()
 
