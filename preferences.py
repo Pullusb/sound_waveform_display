@@ -8,7 +8,8 @@ from bpy.props import (FloatProperty,
                         EnumProperty,
                         StringProperty,
                         IntProperty,
-                        PointerProperty)
+                        PointerProperty,
+                        FloatVectorProperty)
 
 def get_addon_prefs():
     '''
@@ -32,6 +33,16 @@ def open_addon_prefs():
     bpy.context.preferences.active_section = 'ADDONS'
     bpy.ops.preferences.addon_expand(module=__package__)
     bpy.ops.screen.userpref_show('INVOKE_DEFAULT')
+
+class SWD_OT_open_addon_prefs(bpy.types.Operator):
+    bl_idname = "swd.open_addon_prefs"
+    bl_label = "Open Addon Prefs"
+    bl_description = "Open user preferences window in addon tab and prefill the search with addon name"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        open_addon_prefs()
+        return {'FINISHED'}
 
 class SWD_OT_check_ffmpeg(bpy.types.Operator):
     """check if ffmpeg is in path"""
@@ -154,17 +165,41 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         description='Use mixdown even for displaying single audio track \
             \nSlightly longer calculation but generally more accurate waveform')
 
+    wave_color: FloatVectorProperty(
+        name="Waveform Color",
+        subtype='COLOR_GAMMA', # 'COLOR'
+        size=3,
+        default=(0.2392, 0.5098, 0.6941),
+        min=0.0, max=1.0,
+        description="Color of the waveform")
+
+    wave_detail : EnumProperty(
+        name="Waveform details", description="Precision (by increasing resolution) of the sound waveform", 
+        default='4096x1024', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            # ('400x100', 'Blocky', 'Resolution of the generated wave image', 0),
+            ('512x128', 'Blocky', 'Resolution of the generated wave image', 0),
+            ('1024x256', 'Very Low', 'Resolution of the generated wave image', 1),
+            ('2048x512', 'Low', 'Resolution of the generated wave image', 2),
+            ('4096x1024', 'Medium', 'Resolution of the generated wave image', 3),
+            ('8192x2048', 'High', 'Resolution of the generated wave image', 4),
+            # ('12000x3000', 'Very High', 'Resolution of the generated wave image', 5), # too high
+            # ('16384x4096', 'Super High', 'Resolution of the generated wave image', 6), # too high
+            ))
+
     def draw(self, context):
         layout = self.layout
-        # layout.use_property_split = True
+        layout.use_property_split = True
         # layout.use_property_decorate = False
 
         box = layout.box()
-        box.label(text='Waveform Options')
+        box.label(text='Waveform Options:')
+        box.prop(self, "wave_color")
+        box.prop(self, "wave_detail")
         box.prop(self, "force_mixdown")
 
         box = layout.box()
-        box.label(text='FFmpeg check and installation')
+        box.label(text='FFmpeg check and installation:')
         col = box.column()
         # col.label(text="This addon use ffmpeg to generate the waveform (need a recent version)")
         
@@ -176,8 +211,9 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
             col.operator('swd.download_ffmpeg', text='Auto-install FFmpeg (windows)', icon='IMPORT')
 
         row = col.row()
-        row.label(text="Leave field empty if ffmpeg is in system PATH")
         row.operator('swd.check_ffmpeg', text='Check if ffmpeg in PATH', icon='PLUGIN')
+        row = col.row()
+        row.label(text="Leave field empty if ffmpeg is in system PATH")
         
         # col.label(text="May not work if space are in path.")
         box.prop(self, "path_to_ffmpeg")
@@ -187,6 +223,7 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
 ### --- REGISTER ---
 
 classes=(
+SWD_OT_open_addon_prefs,
 SWD_OT_check_ffmpeg,
 SWD_OT_download_ffmpeg,
 SWD_sound_waveform_display_addonpref,

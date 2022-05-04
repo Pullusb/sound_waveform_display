@@ -19,6 +19,7 @@ def side_menu(self, context):
         row.prop(context.scene.swd_settings, 'use_graph')
         row = layout.row()
         row.prop(context.scene.swd_settings, 'use_time')
+        row.operator("swd.open_addon_prefs", text='Prefs', icon='PREFERENCES')
 
         layout.prop(context.scene.swd_settings, 'source')
         if context.scene.swd_settings.source == 'SEQUENCER':
@@ -28,13 +29,21 @@ def side_menu(self, context):
         
         # row = layout.row()
         # row.prop(context.scene.swd_settings, 'color')
-    
+
+def header_layout(self, context):
+    layout = self.layout
+    row = layout.row()
+    row.alignment = 'RIGHT'
+    row.operator("swd.open_addon_prefs", text='', icon='PREFERENCES')
 
 class SWD_PT_SWD_GRAPH_ui(Panel):
     bl_label = "Display waveform"
     bl_space_type = 'GRAPH_EDITOR'
     bl_region_type = 'UI'
     bl_category = "Display"
+
+    # def draw_header(self, context):
+    #     header_layout(self, context)
 
     def draw(self, context):
         side_menu(self, context)
@@ -51,10 +60,11 @@ class SWD_PT_SWD_DOPE_ui(Panel):
     bl_region_type = 'UI'
     bl_category = "Display"
 
+    # def draw_header(self, context):
+    #     header_layout(self, context)
+
     def draw(self, context):
         side_menu(self, context)
-
-
 
 ## function to append in a menu
 def palette_manager_menu(self, context):

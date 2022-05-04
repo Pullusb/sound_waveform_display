@@ -75,9 +75,16 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
         temp_changes += [(s, 'mute', True) for s in vse.sequences if s.type == 'SOUND' and not s.mute]
 
     elif source == 'SEQUENCER':
-        # mute speakers
-        # temp_changes = [(o.data, 'muted', True) for o in scn.objects if o.type == 'SPEAKER' and not o.data.muted]
-        temp_changes = [(s, 'muted', True) for s in bpy.data.speakers if not s.muted]
+        ## mute every speakers
+
+        ## muting speaker data NOT working, need to use speaker -> NLA tracks -> strips
+        # temp_changes = [(s, 'muted', True) for s in bpy.data.speakers if not s.muted]
+        
+        ## muting NLA tracks of speaker object
+        for o in [o for o in scn.objects if o.type == 'SPEAKER' and not o.data.muted and not o.hide_viewport]:
+            if not o.animation_data or not o.animation_data.nla_tracks:
+                continue
+            temp_changes += [(s, 'mute', True) for t in o.animation_data.nla_tracks for s in t.strips]
 
         if vse_tgt == 'SCENE':
             
@@ -97,7 +104,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             unmuted = [s for s in vse.sequences if s.type == 'SOUND' and not s.mute]
             start, end = get_start_end(unmuted)
 
-            temp_changes = [
+            temp_changes += [
                 (scn, 'frame_start', start),
                 (scn, 'frame_end', end),
                 ]
@@ -108,7 +115,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             # get range
             start, end = get_start_end(selected_strips)
 
-            temp_changes = [
+            temp_changes += [
                 # (scn, 'use_preview_range', False) # not affected by preview range
                 (scn, 'frame_start', start),
                 (scn, 'frame_end', end),
@@ -123,17 +130,18 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             ## unmute selected strips (can be counter-logic to some...)
             temp_changes += [(s, 'mute', False) for s in selected_strips]
 
-    # for i in temp_changes: print(i) # Dbg
+    for i in temp_changes: print(i) # Dbg
 
     with attr_set(temp_changes):
         t0 = time()
+        
+        # TODO: bpy.ops.sound.bake_animation() # speaker muting does not works for VSE only mode.
 
         ## fastest container-codec to write seem to be wav... need further testing
         # WAV-PCM = 0.310
         # FLAC-FLAC = 0.450, 
         # MP3-MP3 = 0.8 
         # OGG-VORBIS = 1.114 ~ 1.313, 
-
         ret = bpy.ops.sound.mixdown(filepath=str(filepath), check_existing=False, relative_path=False,
         accuracy=1024,
         
@@ -151,3 +159,20 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
         return None, None
         
     return start, end
+
+def hex_to_rgb(hex, base_one=True) -> tuple:
+    rgb = []
+    for i in (0, 2, 4):
+        decimal = int(hex[i:i+2], 16)
+        if base_one:
+            decimal /= 255
+        rgb.append(decimal)
+
+    return tuple(rgb)
+
+def rgb_to_hex(rgb) -> str:
+    r, g, b = rgb[:3]
+    if isinstance(r, float):
+        return ('{:X}{:X}{:X}').format(int(r*255), int(g*255), int(b*255))
+    else:    
+        return ('{:X}{:X}{:X}').format(r, g, b)

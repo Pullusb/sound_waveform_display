@@ -7,7 +7,7 @@ from gpu_extras.batch import batch_for_shader
 from bpy.types import Operator
 from pathlib import Path
 from time import time
-from .preferences import get_addon_prefs, open_addon_prefs
+from .preferences import get_addon_prefs
 from . import fn
 
 sw_coordlist = []
@@ -38,16 +38,6 @@ def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
     if isinstance(_message, str):
         _message = [_message]
     bpy.context.window_manager.popup_menu(draw, title = _title, icon = _icon)
-
-class SWD_OT_open_addon_prefs(Operator):
-    bl_idname = "swd.open_addon_prefs"
-    bl_label = "Open Addon Prefs"
-    bl_description = "Open user preferences window in addon tab and prefill the search with addon name"
-    bl_options = {"REGISTER"}
-
-    def execute(self, context):
-        open_addon_prefs()
-        return {'FINISHED'}
 
 def refresh():
     for window in bpy.context.window_manager.windows:
@@ -177,6 +167,7 @@ class SWD_OT_enable_draw(Operator):
         vse_tgt = context.scene.swd_settings.vse_target
         # spk_tgt = context.scene.swd_settings.spk_target
 
+        
         force_mix = prefs.force_mixdown # Way safer to always use mixdown !
         strip = None
 
@@ -189,7 +180,7 @@ class SWD_OT_enable_draw(Operator):
 
         vse = context.scene.sequence_editor
         all_sound_strips = [s for s in vse.sequences if s.type == 'SOUND']
-        speakers = [o for o in context.scene.objects if o.type == 'SPEAKER' and not o.data.muted]
+        speakers = [o for o in context.scene.objects if o.type == 'SPEAKER' and not o.data.muted and not o.hide_viewport]
         
         if source == 'ALL' and not all_sound_strips and not speakers:
             self.report({'ERROR'}, 'No sound strip in sequencer and no speaker in scene!')
@@ -293,6 +284,10 @@ class SWD_OT_enable_draw(Operator):
         # COMPAND off :,compand=gain=-6 (less accurate wave but less flat... do not seem worthy)
         # MONO out : [0:a]aformat=channel_layouts=mono
 
+        hex_colo = fn.rgb_to_hex(prefs.wave_color)
+        print('hex_colo: ', hex_colo)
+        img_res = prefs.wave_detail
+
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
@@ -300,7 +295,7 @@ class SWD_OT_enable_draw(Operator):
         cmd += ['-i', str(sfp), 
         '-hide_banner', '-loglevel', 'error',
         '-filter_complex', 
-        "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=3D82B1:draw=full,crop=iw:ih/2:0:0",
+        f"[0:a]aformat=channel_layouts=mono,showwavespic=s={img_res}:colors={hex_colo}:draw=full,crop=iw:ih/2:0:0",
         # "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=3D82B1", 
         '-frames:v', '1', '-y', str(ifp)]
 
@@ -408,7 +403,6 @@ class SWD_OT_disable_draw(Operator):
 
 
 classes=(
-SWD_OT_open_addon_prefs,
 SWD_OT_enable_draw,
 SWD_OT_disable_draw,
 )

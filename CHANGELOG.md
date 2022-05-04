@@ -5,6 +5,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.5.0] - 2022-05-04
+
+### Added
+- Color customization in addon preferences (note: on some darker color, generated hex is invalid -> wave turns full white)
+- button to pop-open preferences in UI
+
+### Fixed
+- Sequencer mode ignore speaker properly
+
 ## [0.4.0] - 2022-05-04
 
 ### Added
