@@ -48,7 +48,7 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
 
     source : EnumProperty(
         name="Source", description="Define audio source to display, sequencer strips, speakers or both", 
-        default='ALL', options={'HIDDEN', 'SKIP_SAVE'},
+        default='SEQUENCER', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
             ('ALL', 'All', 'Sounds from sequencer sound strip AND speaker objects in the scene range', 0),
             ('SEQUENCER', 'Sequencer', 'Only sounds from video sequencer strips with filters and optimisation', 1),
