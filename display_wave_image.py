@@ -277,12 +277,6 @@ class SWD_OT_enable_draw(Operator):
                 return {'CANCELLED'}
 
         print('sound path: ', sfp)
-        # print('sw_start, sw_end: ', sw_start, sw_end)
-
-        # else:
-        #     ## Try to fix x offset error
-        #     duration = (strip.frame_final_duration / context.scene.render.fps) + 0.1
-        #     cmd += ['-t', f'{duration:.2f}']
 
         # color : https://ffmpeg.org/ffmpeg-utils.html#Color
         # wave options : https://ffmpeg.org/ffmpeg-filters.html#showwaves

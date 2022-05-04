@@ -80,12 +80,16 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
         temp_changes = [(s, 'muted', True) for s in bpy.data.speakers if not s.muted]
 
         if vse_tgt == 'SCENE':
-            ## Optimise by reducing range to first/last audible strips
+            
+            ## Optimise by reducing range to first/last audible strips if inside SCENE
             strips = get_sound_strip_in_scene_range(vse)
-            start, end = get_start_end(strips)
-            if start > scn.frame_start:
+            strips_start, strips_end = get_start_end(strips)
+            # override start/end if within range
+            if strips_start > scn.frame_start: 
+                start = strips_start
                 temp_changes.append((scn, 'frame_start', start))
-            if end > scn.frame_end:
+            if strips_end < scn.frame_end:
+                end = strips_end
                 temp_changes.append((scn, 'frame_end', end),)
 
         elif vse_tgt == 'UNMUTED':
