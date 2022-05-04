@@ -150,15 +150,21 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
 
     force_mixdown : BoolProperty(
         name="Force Audio Mixdown",
-        default=False,
+        default=True,
         description='Use mixdown even for displaying single audio track \
             \nSlightly longer calculation but generally more accurate waveform')
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        # layout.use_property_split = True
         # layout.use_property_decorate = False
+
         box = layout.box()
+        box.label(text='Waveform Options')
+        box.prop(self, "force_mixdown")
+
+        box = layout.box()
+        box.label(text='FFmpeg check and installation')
         col = box.column()
         # col.label(text="This addon use ffmpeg to generate the waveform (need a recent version)")
         
@@ -175,11 +181,6 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         
         # col.label(text="May not work if space are in path.")
         box.prop(self, "path_to_ffmpeg")
-
-        
-        box = layout.box()
-        box.prop(self, "force_mixdown")
-        ## Make an auto-install (at least for windows user), maybe store bin on a public repo...
         
 
 

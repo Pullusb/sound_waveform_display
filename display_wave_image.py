@@ -173,106 +173,108 @@ class SWD_OT_enable_draw(Operator):
             bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
 
         ## initialize
-        target_range = context.scene.swd_settings.range
+        source = context.scene.swd_settings.source
+        vse_tgt = context.scene.swd_settings.vse_target
+        # spk_tgt = context.scene.swd_settings.spk_target
+
         force_mix = prefs.force_mixdown # Way safer to always use mixdown !
         strip = None
 
         temp_dir = Path(tempfile.gettempdir())
-        sname = 'waveform.png'
+        sname = 'tmp_scene_waveform.png'
         tmp_sound_name = 'tmp_scene_mixdown.wav'
         ifp = temp_dir / sname # temp files
         mixdown_path = temp_dir / tmp_sound_name
 
-        
-        all_sound_strips = [s for s in context.scene.sequence_editor.sequences if s.type == 'SOUND']
 
-        if not all_sound_strips:
+        vse = context.scene.sequence_editor
+        all_sound_strips = [s for s in vse.sequences if s.type == 'SOUND']
+        speakers = [o for o in context.scene.objects if o.type == 'SPEAKER' and not o.data.muted]
+        
+        if source == 'ALL' and not all_sound_strips and not speakers:
+            self.report({'ERROR'}, 'No sound strip in sequencer and no speaker in scene!')
+            return {'CANCELLED'}
+        
+        if source == 'SEQUENCER' and not all_sound_strips:
             self.report({'ERROR'}, 'No sound strip in sequencer!')
             return {'CANCELLED'}
         
-
-        if target_range == 'SELECT':
-            strips = [s for s in all_sound_strips if s.select]
-            if not strips:
-                self.report({'ERROR'}, 'No selected sound strip!')
-                return {'CANCELLED'}
-        
-        elif target_range == 'UNMUTED':
-            strips = [s for s in all_sound_strips if not s.mute]
-            if not strips:
-                self.report({'ERROR'}, 'No unmuted sound strip!')
-                return {'CANCELLED'}
-
-        else: # scene range
-            strips = fn.get_sound_strip_in_scene_range()
-            if not strips:
-                self.report({'ERROR'}, 'No sound strip within scene range!')
-                return {'CANCELLED'}
-
-        # If only one strip, can use disk file without mixdown
-        if len(strips) == 1:
-            strip = strips[0]    
-
-        if strip:
-            if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
-                strip=None
-            else:
-                sound_fp = Path(os.path.abspath(bpy.path.abspath(strip.sound.filepath)))
-                if not sound_fp.exists():
-                    if strip.sound.packed_file:
-                        strip=None
-                    else:
-                        self.report({'ERROR'}, f'Sound not found at: {sound_fp}')
-                        return {'CANCELLED'}
+        if source == 'SPEAKERS' and not speakers:
+            self.report({'ERROR'}, 'No unmuted speaker in scene!')
+            return {'CANCELLED'}
 
         print('--- Display Sound Waveform')
 
-        # use mixdown
-        if force_mix or not strip:
-            ## start/end  returned by mixdown range
-            sw_start, sw_end = fn.mixdown(filepath=mixdown_path, mode=target_range)
-            if sw_start is None:
+        use_mix_down = True
+        sfp = mixdown_path
+
+        if source == 'ALL' and not speakers:
+            # Use VSE range optimisation
+            source = 'SEQUENCER'
+            vse_tgt = 'SCENE'
+
+        if source == 'ALL':
+            sw_start, sw_end = fn.mixdown(filepath=mixdown_path, source=source)
+
+        elif source == 'SPEAKERS':
+            sw_start, sw_end = fn.mixdown(filepath=mixdown_path, source=source)
+
+        elif source == 'SEQUENCER':
+            strips = []
+            if vse_tgt == 'SELECTED':
+                strips = [s for s in all_sound_strips if s.select]
+                if not strips:
+                    self.report({'ERROR'}, 'No selected sound strip!')
+                    return {'CANCELLED'}
+            
+            elif vse_tgt == 'UNMUTED':
+                strips = [s for s in all_sound_strips if not s.mute]
+                if not strips:
+                    self.report({'ERROR'}, 'No unmuted sound strip!')
+                    return {'CANCELLED'}
+
+            elif vse_tgt == 'SCENE':
+                strips = fn.get_sound_strip_in_scene_range(vse)
+                if not strips:
+                    self.report({'ERROR'}, 'No sound strip within scene range!')
+                    return {'CANCELLED'}
+
+            # If only one strip, can use disk file without mixdown
+            if len(strips) == 1:
+                strip = strips[0]    
+
+            if strip:
+                if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
+                    strip=None
+                else:
+                    sound_fp = Path(os.path.abspath(bpy.path.abspath(strip.sound.filepath)))
+                    if not sound_fp.exists():
+                        if strip.sound.packed_file:
+                            strip=None
+                        else:
+                            self.report({'ERROR'}, f'Sound not found at: {sound_fp}')
+                            return {'CANCELLED'}
+
+            if force_mix or not strip:
+                ## start/end  returned by mixdown range
+                sw_start, sw_end = fn.mixdown(filepath=mixdown_path, source=source, vse_tgt=vse_tgt)
+
+            else:
+                # Directly use active strip
+                print('-> Using existing strip')
+                sw_start = strip.frame_final_start
+                sw_end = strip.frame_final_end
+                if strip.mute:
+                    self.report({'WARNING'}, f'Used sound strip is muted : {strip.name}')
+                else:
+                    self.report({'INFO'}, f'Wave from: {strip.name}')
+                sfp = Path(os.path.abspath(bpy.path.abspath(strip.sound.filepath)))
+                # use mixdown
+                use_mix_down = False
+
+        if sw_start is None:
                 self.report({'ERROR'}, 'Problem mixing down sound to load waveform')
                 return {'CANCELLED'}
-            sfp = mixdown_path
-
-        else:
-            # Directly use active strip
-            print('-> Using existing strip')
-            sw_start = strip.frame_final_start
-            sw_end = strip.frame_final_end
-
-            if strip.mute:
-                self.report({'WARNING'}, f'Used sound strip is muted : {strip.name}')
-            else:
-                self.report({'INFO'}, f'Wave from: {strip.name}')
-
-            # ifp = sfp.parent / sname # same folder as the source video
-
-            '''# # this condition should enter mixdown above
-            if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
-                print('Trimmed sound')
-                # need to calculate the crop for command
-                # Get sound full time
-                fulltime = strip.frame_duration * context.scene.render.fps
-
-                timein = strip.frame_offset_start / context.scene.render.fps # -ss
-
-                # old: duration = (strip.frame_duration - strip.frame_offset_end - strip.frame_offset_start) / context.scene.render.fps
-
-                duration = strip.frame_final_duration / context.scene.render.fps # -t
-                # timeout = timein + (strip.frame_final_duration / context.scene.render.fps) # -to
-
-                duration = (strip.frame_final_duration / context.scene.render.fps) + 1 # TEST
-
-                if timein != 0:
-                    cmd += ['-ss', f'{timein:.3f}']
-                    print(f'Cutted start at {timein:.3f}')
-                if duration != fulltime:
-                    cmd += ['-t', f'{duration:.3f}']
-                    # cmd += ['-to', f'{timeout:.3f}'] # define end time instead of duration
-                    print(f'reduced duration to {duration:.3f}')
-            '''
 
         print('sound path: ', sfp)
         # print('sw_start, sw_end: ', sw_start, sw_end)
@@ -333,10 +335,7 @@ class SWD_OT_enable_draw(Operator):
 
         image = bpy.data.images.load(str(ifp), check_existing=False)
 
-        # TODO background mixdown of scene sound in temp
-
         height = ((sw_end - sw_start) * image.size[1]) // image.size[0]
-        half = height // 2
         # print(f'image generated at {ifp}')
         # sw_coordlist = ((100, 100), (600, 100), (600, 200), (100, 200)) # test
 
@@ -347,6 +346,7 @@ class SWD_OT_enable_draw(Operator):
                         (sw_start, height))
 
         ## half height position (if not cutted)
+        # half = height // 2
         # sw_coordlist = ((sw_start, -half),
         #                 (sw_end, -half),
         #                 (sw_end, half),
@@ -363,20 +363,19 @@ class SWD_OT_enable_draw(Operator):
                 draw_callback_px, args, spacetype, 'POST_PIXEL')
 
         refresh()
-        # store ??
+
         # bpy.types.ViewLayer.sw_viewtype = 'bpy.types.SpaceDopeSheetEditor'
         # bpy.types.ViewLayer.sw_spacetyper = 'WINDOW'
         # bpy.types.ViewLayer.sw_handle = handle
         # print(context.view_layer.sw_handle)
         
         # print()
-        # ensure to delete the right one
-
-        # if sfp.exists() and sfp.name == tmp_sound_name:
-        #     try:
-        #         sfp.unlink()
-        #     except Exception as e:
-        #         print(f'! impossible to remove: {sfp}\n\n{e}')
+        # ensure to delete mixdown sound after generating waveform
+        if use_mix_down and sfp.exists() and sfp.name == tmp_sound_name:
+            try:
+                sfp.unlink()
+            except Exception as e:
+                print(f'! impossible to remove: {sfp}\n\n{e}')
         return {'FINISHED'}
 
 

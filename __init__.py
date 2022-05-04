@@ -2,11 +2,12 @@ bl_info = {
     "name": "Sound Waveform Display",
     "description": "Display selected sound waveform in timeline/dopesheet/graph",
     "author": "Samuel Bernou",
-    "version": (0, 3, 1),
+    "version": (0, 4, 0),
     "blender": (2, 93, 0),
     "location": "View3D",
     "warning": "",
-    "doc_url": "",
+    "doc_url": "https://github.com/Pullusb/sound_waveform_display",
+    "tracker_url": "https://github.com/Pullusb/sound_waveform_display/issues",
     "category": "Animation" }
 
 from . import properties

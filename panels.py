@@ -6,7 +6,6 @@ from .preferences import get_addon_prefs
 def side_menu(self, context):
         layout = self.layout
 
-        layout.prop(context.scene.swd_settings, 'range')
         row = layout.row()
         # row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
         row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')
@@ -21,6 +20,11 @@ def side_menu(self, context):
         row = layout.row()
         row.prop(context.scene.swd_settings, 'use_time')
 
+        layout.prop(context.scene.swd_settings, 'source')
+        if context.scene.swd_settings.source == 'SEQUENCER':
+            layout.prop(context.scene.swd_settings, 'vse_target')
+        # elif context.scene.swd_settings.source == 'SPEAKERS':
+        #     layout.prop(context.scene.swd_settings, 'spk_target')
         
         # row = layout.row()
         # row.prop(context.scene.swd_settings, 'color')

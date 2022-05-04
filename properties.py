@@ -46,28 +46,34 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
         subtype='COLOR', # COLOR_GAMMA
         size=3, options={'HIDDEN'})
 
-    range : EnumProperty(
-        name="Show", description="Define what should be displayed", 
-        default='SELECTION', options={'HIDDEN', 'SKIP_SAVE'},
+    source : EnumProperty(
+        name="Source", description="Define audio source to display, sequencer strips, speakers or both", 
+        default='ALL', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            ('SELECTION', 'Selected Strips', 'Waveform of selected strips in VSE (even muted ones)', 0),
-            ('UNMUTED', 'Unmuted Strips', 'Display all audible strips in VSE', 1),
+            ('ALL', 'All', 'Sounds from sequencer sound strip AND speaker objects in the scene range', 0),
+            ('SEQUENCER', 'Sequencer', 'Only sounds from video sequencer strips with filters and optimisation', 1),
+            ('SPEAKERS', 'Speaker Objects', 'Only sounds from speaker objects', 2),
+            # ('ALL', 'All Strip', '', '', 2),
+            ))
+
+    vse_target : EnumProperty(
+        name="Show", description="Define what should be displayed", 
+        default='SELECTED', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('SELECTED', 'Selected Strips', 'Display only selected strips in VSE (even muted ones)', 0),
+            ('UNMUTED', 'Audible Strips', 'Display all audible strips in VSE', 1),
             ('SCENE', 'Scene Range', 'Display VSE audio of scene range (not preview range)', 2),
             # ('ALL', 'All Strip', '', '', 2),
             ))
-    
 
+    # spk_target : EnumProperty(
+    #     name="Show", description="Define what should be displayed", 
+    #     default='UNMUTED', options={'HIDDEN', 'SKIP_SAVE'},
+    #     items=(
+    #         ('UNMUTED', 'Audible Speakers', 'Display all audible speaker objects', 0),
+    #         ('SELECTED', 'Selected Speakers', 'Display only selected speaker objects', 1),
+    #         ))
 
-    ## property with update on change
-    # edit_lines_opacity : FloatProperty(
-    #     name="edit lines Opacity", description="Change edit lines opacity for all grease pencils", 
-    #     default=0.5, min=0.0, max=1.0, step=3, precision=2)
-
-
-
-# classes=(
-# SWD_PGT_settings,
-# )
 
 def register(): 
     # for cls in classes:
