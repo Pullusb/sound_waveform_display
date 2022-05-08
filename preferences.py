@@ -161,7 +161,7 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
 
     force_mixdown : BoolProperty(
         name="Force Audio Mixdown",
-        default=True,
+        default=False,
         description='Use mixdown even for displaying single audio track \
             \nSlightly longer calculation but generally more accurate waveform')
 

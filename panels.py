@@ -5,30 +5,38 @@ from .preferences import get_addon_prefs
 
 def side_menu(self, context):
         layout = self.layout
-
+        scn = context.scene
         row = layout.row()
         # row.operator('anim.timeline_draw_test', icon = 'NORMALIZE_FCURVES')
         row.operator('anim.enable_draw', text='On', icon = 'NORMALIZE_FCURVES')
         row.operator('anim.disable_draw', text='Off')
 
         row = layout.row()
-        row.prop(context.scene.swd_settings, 'height_offset')
+        row.prop(scn.swd_settings, 'height_offset')
 
         row = layout.row()
-        row.prop(context.scene.swd_settings, 'use_dope')
-        row.prop(context.scene.swd_settings, 'use_graph')
+        row.prop(scn.swd_settings, 'use_dope')
+        row.prop(scn.swd_settings, 'use_graph')
         row = layout.row()
-        row.prop(context.scene.swd_settings, 'use_time')
+        row.prop(scn.swd_settings, 'use_time')
         row.operator("swd.open_addon_prefs", text='Prefs', icon='PREFERENCES')
 
-        layout.prop(context.scene.swd_settings, 'source')
-        if context.scene.swd_settings.source == 'SEQUENCER':
-            layout.prop(context.scene.swd_settings, 'vse_target')
-        # elif context.scene.swd_settings.source == 'SPEAKERS':
-        #     layout.prop(context.scene.swd_settings, 'spk_target')
+        layout.prop(scn.swd_settings, 'source')
+        if scn.swd_settings.source == 'SEQUENCER':
+            vse = scn.sequence_editor
+            if not vse:
+                layout.label(text='No sequencer active in scene')
+                return
+            layout.prop(scn.swd_settings, 'vse_target')
+            if scn.swd_settings.vse_target == 'LIST':
+                layout.template_list("SWD_UL_sound_list", "", vse, "sequences", \
+                    scn.swd_settings, "seq_idx", rows=3)
+
+        # elif scn.swd_settings.source == 'SPEAKERS':
+        #     layout.prop(scn.swd_settings, 'spk_target')
         
         # row = layout.row()
-        # row.prop(context.scene.swd_settings, 'color')
+        # row.prop(scn.swd_settings, 'color')
 
 def header_layout(self, context):
     layout = self.layout

@@ -218,6 +218,16 @@ class SWD_OT_enable_draw(Operator):
                     self.report({'ERROR'}, 'No selected sound strip!')
                     return {'CANCELLED'}
             
+            if vse_tgt == 'LIST':
+                if context.scene.swd_settings.seq_idx < 0:
+                    self.report({'ERROR'}, 'Must select a sound in list')
+                    return {'CANCELLED'}
+                the_strip = vse.sequences[context.scene.swd_settings.seq_idx]
+                if the_strip.type != 'SOUND':
+                    self.report({'ERROR'}, 'Must select a sound in list (active index is not a sound)')
+                    return {'CANCELLED'}
+                strips = [the_strip]
+
             elif vse_tgt == 'UNMUTED':
                 strips = [s for s in all_sound_strips if not s.mute]
                 if not strips:
@@ -285,7 +295,8 @@ class SWD_OT_enable_draw(Operator):
         # MONO out : [0:a]aformat=channel_layouts=mono
 
         hex_colo = fn.rgb_to_hex(prefs.wave_color)
-        print('hex_colo: ', hex_colo)
+        # print('hex_colo: ', hex_colo)
+
         img_res = prefs.wave_detail
 
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]

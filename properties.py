@@ -12,7 +12,44 @@ def change_edit_lines_opacity(self, context):
     for gp in bpy.data.grease_pencils:
         if not gp.is_annotation:
             gp.edit_line_color[3]=self.edit_lines_opacity
-    
+
+class SWD_UL_sound_list(bpy.types.UIList):
+    #   index is index of the current item in the collection.
+    #   flt_flag is the result of the filtering process for this item.
+    #   Note: as index and flt_flag are optional arguments, you do not have to use/declare them here if you don't
+    #         need them.
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        strip = item
+        ## showing the prop make strip name editable by double click!
+        # layout.prop(strip, "name", text="", emboss=False) # , icon_value=icon
+        ## non editable name
+        layout.label(text=strip.name)
+   
+    def draw_filter(self, context, layout):
+        row = layout.row()
+        subrow = row.row(align=True)
+        subrow.prop(self, "filter_name", text="") # Only show items matching this name (use ‘*’ as wildcard)
+        ## reverse order filter (not really needed)
+        # icon = 'SORT_DESC' if self.use_filter_sort_reverse else 'SORT_ASC'
+        # subrow.prop(self, "use_filter_sort_reverse", text="", icon=icon) # built-in reverse
+
+    def filter_items(self, context, data, propname):
+        collec = getattr(data, propname)
+        helper_funcs = bpy.types.UI_UL_list
+        # note : self.bitflag_filter_item == 1073741824 (reserved to filter)
+
+        flt_type = 'SOUND'
+        flt_flags = []
+        flt_neworder = []
+        if self.filter_name:
+            flt_flags = helper_funcs.filter_items_by_name(self.filter_name, self.bitflag_filter_item, collec, "name",
+                                                          reverse=self.use_filter_sort_reverse)#self.use_filter_name_reverse)
+            # combine search result and type filter result
+            flt_flags = [flt_flags[i] & self.bitflag_filter_item if strip.type == flt_type else 0 for i, strip in enumerate(collec)]
+        else:
+            flt_flags = [self.bitflag_filter_item if strip.type == flt_type else 0 for strip in collec]
+        return flt_flags, flt_neworder
+
 class SWD_PGT_settings(bpy.types.PropertyGroup):
     ## HIDDEN to hide the animatable dot thing
     # stringprop : StringProperty(
@@ -60,11 +97,13 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
         name="Show", description="Define what should be displayed", 
         default='SELECTED', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            ('SELECTED', 'Selected Strips', 'Display only selected strips in VSE (even muted ones)', 0),
-            ('UNMUTED', 'Audible Strips', 'Display all audible strips in VSE', 1),
-            ('SCENE', 'Scene Range', 'Display VSE audio of scene range (not preview range)', 2),
-            # ('ALL', 'All Strip', '', '', 2),
+            ('SELECTED', 'Selected Strips', 'Display only selected strips in sequencer (even muted ones)', 0),
+            ('LIST', 'Sound In List', 'Display only sound from listed sequencer strip (list even muted ones)', 1),
+            ('UNMUTED', 'Audible Strips', 'Display all audible strips in sequencer', 2),
+            ('SCENE', 'Scene Range', 'Display sequencer audio of scene range (not preview range)', 3),
             ))
+
+    seq_idx : IntProperty(default=-1)
 
     # spk_target : EnumProperty(
     #     name="Show", description="Define what should be displayed", 
@@ -75,15 +114,22 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
     #         ))
 
 
+classes = (
+    SWD_PGT_settings,
+    SWD_UL_sound_list,
+)
+
 def register(): 
-    # for cls in classes:
-    #     bpy.utils.register_class(cls)
-    bpy.utils.register_class(SWD_PGT_settings)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    # bpy.utils.register_class(SWD_PGT_settings)
     bpy.types.Scene.swd_settings = bpy.props.PointerProperty(type = SWD_PGT_settings)
+    # bpy.utils.register_class(SWD_UL_sound_list)
     
 
 def unregister():
-    # for cls in reversed(classes):
-    #     bpy.utils.unregister_class(cls)
-    bpy.utils.unregister_class(SWD_PGT_settings)
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
+    # bpy.utils.unregister_class(SWD_UL_sound_list)
     del bpy.types.Scene.swd_settings
+    # bpy.utils.unregister_class(SWD_PGT_settings)

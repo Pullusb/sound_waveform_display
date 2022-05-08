@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.6.0] - 2022-05-08
+
+### Added
+
+- Sound list: Select a sound strip directly in panel, no need to open sequencer editor
+
 ## [0.5.0] - 2022-05-04
 
 ### Added

@@ -109,8 +109,11 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
                 (scn, 'frame_end', end),
                 ]
 
-        else: # SELECT
-            selected_strips = [s for s in vse.sequences if s.type == 'SOUND' and s.select]
+        else: # SELECT or LIST
+            if vse_tgt == 'SELECT':
+                selected_strips = [s for s in vse.sequences if s.type == 'SOUND' and s.select]
+            else: # LIST
+                selected_strips = [vse.sequences[scn.swd_settings.seq_idx]]
             
             # get range
             start, end = get_start_end(selected_strips)
