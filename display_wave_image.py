@@ -132,6 +132,7 @@ class SWD_OT_enable_draw(Operator):
         global image
 
         prefs = get_addon_prefs()
+        dbg = prefs.debug
         ffbin = Path(__file__).parent / 'ffmpeg.exe'
 
         cmd = ['ffmpeg',]
@@ -194,7 +195,7 @@ class SWD_OT_enable_draw(Operator):
             self.report({'ERROR'}, 'No unmuted speaker in scene!')
             return {'CANCELLED'}
 
-        print('--- Display Sound Waveform')
+        if dbg: print('--- Display Sound Waveform')
 
         use_mix_down = True
         sfp = mixdown_path
@@ -213,7 +214,7 @@ class SWD_OT_enable_draw(Operator):
         elif source == 'SEQUENCER':
             strips = []
             if vse_tgt == 'SELECTED':
-                strips = [s for s in all_sound_strips if s.select]
+                strips = [s for s in all_sound_strips if s.select or (s == vse.active_strip)]
                 if not strips:
                     self.report({'ERROR'}, 'No selected sound strip!')
                     return {'CANCELLED'}
@@ -262,7 +263,7 @@ class SWD_OT_enable_draw(Operator):
 
             else:
                 # Directly use active strip
-                print('-> Using existing strip')
+                if dbg: print('-> Using existing sound file from strip')
                 sw_start = strip.frame_final_start
                 sw_end = strip.frame_final_end
                 if strip.mute:
@@ -277,7 +278,7 @@ class SWD_OT_enable_draw(Operator):
                 self.report({'ERROR'}, 'Problem mixing down sound to load waveform')
                 return {'CANCELLED'}
 
-        print('sound path: ', sfp)
+        if dbg: print('sound path: ', sfp)
 
         # color : https://ffmpeg.org/ffmpeg-utils.html#Color
         # wave options : https://ffmpeg.org/ffmpeg-filters.html#showwaves
@@ -316,7 +317,8 @@ class SWD_OT_enable_draw(Operator):
         # 244D69
         # 1A374B        
         # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=4000x1600", '-frames:v', '1', '-y', str(ifp)]
-        print('cmd:', ' '.join(list(map(str, cmd)))) # print final cmd
+        
+        if dbg: print('cmd:', ' '.join(list(map(str, cmd)))) # print final cmd
 
         t0 = time()
         ret = subprocess.call(cmd)
@@ -324,7 +326,7 @@ class SWD_OT_enable_draw(Operator):
             self.report({'ERROR'}, '--- problem generating sound wave image')
             return {'CANCELLED'}
 
-        print(f'Generated sound waveform: {time() - t0:.3f}s')
+        if dbg: print(f'Generated sound waveform: {time() - t0:.3f}s')
         if not ifp.exists():
             self.report({'ERROR'}, f'Waveform not generated at : {ifp}')
             return {'CANCELLED'}

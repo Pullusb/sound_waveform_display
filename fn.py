@@ -3,6 +3,8 @@ import tempfile
 from pathlib import Path
 from time import time
 
+from .preferences import get_addon_prefs
+
 ## context manager
 class attr_set():
     '''Receive a list of tuple [(data_path, "attribute" [, wanted value)] ]
@@ -58,10 +60,13 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     source in (ALL, SEQUENCER, SPEAKER)
     vse_tgt in (SELECTED, UNMUTED, SCENE)
     '''
-
+    prefs = get_addon_prefs()
     scn = bpy.context.scene
     vse = scn.sequence_editor
-    temp_changes = []
+    
+    ## unmute playback (also mute mixdown)
+    # use_audio might change in API since name is the opposite
+    temp_changes = [(scn, 'use_audio', False)]
     
     ## default to scene range
     start, end = scn.frame_start, scn.frame_end
@@ -109,9 +114,9 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
                 (scn, 'frame_end', end),
                 ]
 
-        else: # SELECT or LIST
-            if vse_tgt == 'SELECT':
-                selected_strips = [s for s in vse.sequences if s.type == 'SOUND' and s.select]
+        else: # SELECTED or LIST
+            if vse_tgt == 'SELECTED':
+                selected_strips = [s for s in vse.sequences if s.type == 'SOUND' and (s.select or s == vse.active_strip)]
             else: # LIST
                 selected_strips = [vse.sequences[scn.swd_settings.seq_idx]]
             
@@ -133,14 +138,14 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             ## unmute selected strips (can be counter-logic to some...)
             temp_changes += [(s, 'mute', False) for s in selected_strips]
 
-    for i in temp_changes: print(i) # Dbg
+    # for i in temp_changes: print(i) # Dbg
 
     with attr_set(temp_changes):
         t0 = time()
         
         # TODO: bpy.ops.sound.bake_animation() # speaker muting does not works for VSE only mode.
 
-        ## fastest container-codec to write seem to be wav... need further testing
+        ## Fastest container-codec to write seem to be wav... need further testing
         # WAV-PCM = 0.310
         # FLAC-FLAC = 0.450, 
         # MP3-MP3 = 0.8 
@@ -155,7 +160,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
         bitrate=128, # default 192 [32, 512]
         split_channels=False)
 
-        print(f'Mixdown time: {time() - t0:.3f}s')
+        if prefs.debug: print(f'Mixdown time: {time() - t0:.3f}s')
 
     if ret != {'FINISHED'}:
         print(ret)

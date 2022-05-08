@@ -184,8 +184,13 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
             ('4096x1024', 'Medium', 'Resolution of the generated wave image', 3),
             ('8192x2048', 'High', 'Resolution of the generated wave image', 4),
             # ('12000x3000', 'Very High', 'Resolution of the generated wave image', 5), # too high
-            # ('16384x4096', 'Super High', 'Resolution of the generated wave image', 6), # too high
+            # ('16384x4096', 'Super High', 'Resolution of the generated wave image', 6),
             ))
+    
+    debug : BoolProperty(
+        name="Verbose Mode",
+        description="Verbose/Debug mode. Enable prints in console to follow script behavior",
+        default=False, options={'HIDDEN'})
 
     def draw(self, context):
         layout = self.layout
@@ -197,6 +202,7 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         box.prop(self, "wave_color")
         box.prop(self, "wave_detail")
         box.prop(self, "force_mixdown")
+        box.prop(self, "debug")
 
         box = layout.box()
         box.label(text='FFmpeg check and installation:')
