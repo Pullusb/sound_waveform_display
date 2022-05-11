@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.6.2] - 2022-05-11 18:04:30
+
+### Added
+
+- Quick prefs: pref button open a popover to adjust wave color/detail or fully open the addon prefs (previously opened addon prefs directly)
+
 ## [0.6.1] - 2022-05-08
 
 ### Added

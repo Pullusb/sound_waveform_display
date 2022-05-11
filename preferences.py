@@ -223,7 +223,6 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         
         # col.label(text="May not work if space are in path.")
         box.prop(self, "path_to_ffmpeg")
-        
 
 
 ### --- REGISTER ---

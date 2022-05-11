@@ -2,6 +2,23 @@ import bpy
 from bpy.types import Panel
 from .preferences import get_addon_prefs
 
+class SWD_PT_quick_pref_ui(Panel):
+    bl_label = "Sound waveform quick prefs"
+    # bl_idname = "SWD_PT_quick_pref_ui"
+    bl_options = {'INSTANCED'}
+    bl_space_type = 'GRAPH_EDITOR'
+    bl_region_type = 'UI'
+    bl_context = "Display"
+
+    def draw(self, context):
+        prefs = get_addon_prefs()
+        layout = self.layout
+        # layout.use_property_split = True
+        layout.prop(prefs, 'wave_color', text='Color')
+        layout.prop(prefs, 'wave_detail', text='Detail')
+        # layout.prop(prefs, 'force_mixdown')
+        layout.operator("swd.open_addon_prefs", text='Open All Prefs', icon='PREFERENCES')
+
 
 def side_menu(self, context):
         layout = self.layout
@@ -19,7 +36,10 @@ def side_menu(self, context):
         row.prop(scn.swd_settings, 'use_graph')
         row = layout.row()
         row.prop(scn.swd_settings, 'use_time')
-        row.operator("swd.open_addon_prefs", text='Prefs', icon='PREFERENCES')
+        ## Direct prefs
+        # row.operator("swd.open_addon_prefs", text='Prefs', icon='PREFERENCES')
+        ## quick prefs
+        row.popover('SWD_PT_quick_pref_ui', text='Prefs', icon='PREFERENCES')
 
         layout.prop(scn.swd_settings, 'source')
         if scn.swd_settings.source == 'SEQUENCER':
@@ -88,6 +108,7 @@ def palette_manager_menu(self, context):
 #-# REGISTER
 
 classes=(
+SWD_PT_quick_pref_ui,
 SWD_PT_SWD_GRAPH_ui,
 SWD_PT_SWD_DOPE_ui,
 )
