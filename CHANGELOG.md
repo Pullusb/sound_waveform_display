@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.3] - 2022-05-22
 
-### Changed
+### Fixed
 
+- ffmpeg release link
 - cleanup for public release
 
 ## [0.6.2] - 2022-05-11

@@ -113,17 +113,17 @@ class SWD_OT_download_ffmpeg(bpy.types.Operator):
         # layout.label(text='This action will download an ffmpeg release from ffmpeg repository')
         col = layout.column()
         if self.exists:
-            col.label(text='ffmpeg is already in addon folder, delete and re-download ? (~90 Mo)', icon='INFO')
+            col.label(text='ffmpeg is already in addon folder, delete and re-download ? (~100 Mo)', icon='INFO')
         else:
-            col.label(text='This will download ffmpeg release from ffmpeg github page in addon folder (~90 Mo)', icon='INFO')
+            col.label(text='This will download ffmpeg release from ffmpeg github page in addon folder (~100 Mo)', icon='INFO')
             col.label(text='Would you like to continue ?')
 
     def execute(self, context):
         if self.exists:
             self.ffbin.unlink()
         
-        ## hardcoded compatible release
-        release_url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2021-11-23-12-19/ffmpeg-n4.4.1-2-gcc33e73618-win64-gpl-4.4.zip' 
+        ## hardcoded release link
+        release_url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' 
         dl_url(release_url, str(self.ff_zip))
 
         with zipfile.ZipFile(str(self.ff_zip), 'r') as zip_ref:
