@@ -64,13 +64,10 @@ def draw_callback_px(self, context):
         return
 
     margin = 12 * context.preferences.view.ui_scale
-    # print('sw_coordlist: ', sw_coordlist)
 
     if not context.region:
         return
     coords = [\
-        # (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1]*100)+margin)\
-        # (context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1])+margin)\
         [context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1])+margin]\
         for co in sw_coordlist]
 
@@ -99,22 +96,20 @@ def draw_callback_px(self, context):
     # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, size, size, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, pixels)
     # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, sx, sy, 0, bgl.GL_RGBA, bgl.GL_FLOAT, buf)
 
-    # bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA) # looks like default...
+    # bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA) # same as default ?
     # bgl.glBlendFunc(bgl.GL_DST_COLOR, bgl.GL_ZERO) # alpha is black
-    bgl.glBlendFunc(bgl.GL_ONE, bgl.GL_ONE) # interesting : like an additive filter
+    bgl.glBlendFunc(bgl.GL_ONE, bgl.GL_ONE) # overlay with a kind of additive filter
     # bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
 
     shader.bind()
 
     bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_NEAREST)
     bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_NEAREST)
-    # shader.uniform_float("color", (0.8,0.1,0.1,0.5)) # how set color/transparency ?
+
     shader.uniform_int("image", 0)
     batch.draw(shader)
-    # self.batch_line.draw(shader)
 
-    # restore opengl defaults
-    # bgl.glLineWidth(1)
+    ## restore opengl defaults
     # bgl.glDisable(bgl.GL_LINE_SMOOTH)
     bgl.glDisable(bgl.GL_BLEND)
 
@@ -157,7 +152,7 @@ class SWD_OT_enable_draw(Operator):
                         ])
                 return {'CANCELLED'}
 
-        # disable handle_dope if launched
+        ## disable handle_dope if launched
         if handle_dope:
             bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle_dope, 'WINDOW')
         if handle_graph:
@@ -167,7 +162,6 @@ class SWD_OT_enable_draw(Operator):
         source = context.scene.swd_settings.source
         vse_tgt = context.scene.swd_settings.vse_target
         # spk_tgt = context.scene.swd_settings.spk_target
-
         
         force_mix = prefs.force_mixdown # Way safer to always use mixdown !
         strip = None
@@ -285,7 +279,7 @@ class SWD_OT_enable_draw(Operator):
         # showwave pics : https://ffmpeg.org/ffmpeg-filters.html#showwavespic
         # exemples : https://www.zixi.org/archives/478.html
         # scale=lin <- defaut is Fine
-        # filter=peak not working yet filter must be dealt differently
+        # filter=peak not working yet, filter must be dealt differently
 
         # split_channels=1 <- use defaut (do not split except if needed)
 
@@ -296,27 +290,18 @@ class SWD_OT_enable_draw(Operator):
         # MONO out : [0:a]aformat=channel_layouts=mono
 
         hex_colo = fn.rgb_to_hex(prefs.wave_color)
-        # print('hex_colo: ', hex_colo)
 
         img_res = prefs.wave_detail
 
-        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=1000x400:colors=blue", '-frames:v', '1', '-y', str(ifp)]
-        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
-        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,compand=gain=-6,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
-        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "[0:a]aformat=channel_layouts=mono,showwavespic=s=2000x800:colors=7FB3CE:draw=full", '-frames:v', '1', '-y', str(ifp)]
         cmd += ['-i', str(sfp), 
-        '-hide_banner', '-loglevel', 'error',
+        '-hide_banner', 
+        '-loglevel', 'error',
         '-filter_complex', 
         f"[0:a]aformat=channel_layouts=mono,showwavespic=s={img_res}:colors={hex_colo}:draw=full,crop=iw:ih/2:0:0",
-        # "[0:a]aformat=channel_layouts=mono,showwavespic=s=8192x2048:colors=3D82B1", 
-        '-frames:v', '1', '-y', str(ifp)]
+        '-frames:v', '1', 
+        '-y', str(ifp)]
 
-        # blue clear 7FB3CE
-        # 3D82B1
-        # 30668B
-        # 244D69
-        # 1A374B        
-        # cmd = ['ffmpeg', '-i', str(sfp), '-filter_complex', "showwavespic=s=4000x1600", '-frames:v', '1', '-y', str(ifp)]
+        # "[0:a]aformat=channel_layouts=mono,showwavespic=s=4096x1024:colors=3D82B1", # Static filter line
         
         if dbg: print('cmd:', ' '.join(list(map(str, cmd)))) # print final cmd
 
@@ -339,7 +324,6 @@ class SWD_OT_enable_draw(Operator):
 
         height = ((sw_end - sw_start) * image.size[1]) // image.size[0]
         # print(f'image generated at {ifp}')
-        # sw_coordlist = ((100, 100), (600, 100), (600, 200), (100, 200)) # test
 
         ## full image
         sw_coordlist = ((sw_start, 0),
@@ -366,13 +350,7 @@ class SWD_OT_enable_draw(Operator):
 
         refresh()
 
-        # bpy.types.ViewLayer.sw_viewtype = 'bpy.types.SpaceDopeSheetEditor'
-        # bpy.types.ViewLayer.sw_spacetyper = 'WINDOW'
-        # bpy.types.ViewLayer.sw_handle = handle
-        # print(context.view_layer.sw_handle)
-        
-        # print()
-        # ensure to delete mixdown sound after generating waveform
+        ## ensure to delete mixdown sound after generating waveform
         if use_mix_down and sfp.exists() and sfp.name == tmp_sound_name:
             try:
                 sfp.unlink()
@@ -408,12 +386,8 @@ class SWD_OT_disable_draw(Operator):
         stopped = disable_waveform_draw_handler()
         if not stopped:
             self.report({'WARNING'}, 'Already disabled')
-        ## with normal handler
-        # if 'name' in [hand.__name__ for hand in bpy.app.handlers.save_pre]:
-        #     bpy.app.handle_dopers.save_pre.remove(name)
 
         return {'FINISHED'}
-
 
 classes=(
 SWD_OT_enable_draw,

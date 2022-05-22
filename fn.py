@@ -65,7 +65,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     vse = scn.sequence_editor
     
     ## unmute playback (also mute mixdown)
-    # use_audio might change in API since name is the opposite
+    ## note for later: use_audio might change in API since mean the opposite
     temp_changes = [(scn, 'use_audio', False)]
     
     ## default to scene range
@@ -142,8 +142,6 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
 
     with attr_set(temp_changes):
         t0 = time()
-        
-        # TODO: bpy.ops.sound.bake_animation() # speaker muting does not works for VSE only mode.
 
         ## Fastest container-codec to write seem to be wav... need further testing
         # WAV-PCM = 0.310

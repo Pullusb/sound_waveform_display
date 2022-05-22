@@ -177,7 +177,6 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         name="Waveform details", description="Precision (by increasing resolution) of the sound waveform", 
         default='4096x1024', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            # ('400x100', 'Blocky', 'Resolution of the generated wave image', 0),
             ('512x128', 'Blocky', 'Resolution of the generated wave image', 0),
             ('1024x256', 'Very Low', 'Resolution of the generated wave image', 1),
             ('2048x512', 'Low', 'Resolution of the generated wave image', 2),
@@ -186,7 +185,7 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
             # ('12000x3000', 'Very High', 'Resolution of the generated wave image', 5), # too high
             # ('16384x4096', 'Super High', 'Resolution of the generated wave image', 6),
             ))
-    
+
     debug : BoolProperty(
         name="Verbose Mode",
         description="Verbose/Debug mode. Enable prints in console to follow script behavior",
