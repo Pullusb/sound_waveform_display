@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0] - 2022-05-25
 
+### Added
+
+- download for mac and linux
+
 ### Changed
 
 - default detail is `Medium`
@@ -14,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- disable draw handler on load. avoid error in console when loading another blend.
+- disable draw handler on load. Avoid error in console when loading another blend.
 
 ## [0.7.0] - 2022-05-25
 

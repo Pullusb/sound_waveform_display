@@ -62,7 +62,7 @@ class SWD_OT_check_ffmpeg(bpy.types.Operator):
             ffbin = Path(__file__).parent / 'ffmpeg.exe'
             self.local_ffmpeg = ffbin.exists()
 
-        return context.window_manager.invoke_props_dialog(self, width=250)
+        return context.window_manager.invoke_props_dialog(self, width=400)
     
     def draw(self, context):
         layout = self.layout
@@ -94,6 +94,7 @@ def unzip(zip_path, extract_dir_path):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(extract_dir_path)
 
+''' ## windows only, download from official github release
 class SWD_OT_download_ffmpeg(bpy.types.Operator):
     """Download if ffmpeg is in path"""
     bl_idname = "swd.download_ffmpeg"
@@ -122,6 +123,7 @@ class SWD_OT_download_ffmpeg(bpy.types.Operator):
         if self.exists:
             self.ffbin.unlink()
         
+        ### get from ffmpeg official build site and unzip 
         ## hardcoded release link
         release_url = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' 
         dl_url(release_url, str(self.ff_zip))
@@ -142,6 +144,50 @@ class SWD_OT_download_ffmpeg(bpy.types.Operator):
         
         if self.ff_zip.exists():
             self.ff_zip.unlink()
+        
+        if self.ffbin.exists():
+            prefs = get_addon_prefs()
+            prefs.path_to_ffmpeg = str(self.ffbin.resolve())
+
+        self.report({'INFO'}, f'Installed: {self.ffbin.resolve()}')
+        return {'FINISHED'}
+'''
+
+class SWD_OT_download_ffmpeg(bpy.types.Operator):
+    """Download if ffmpeg is in path"""
+    bl_idname = "swd.download_ffmpeg"
+    bl_label = "Download ffmpeg"
+    bl_options = {'REGISTER', 'INTERNAL'}
+    
+    def invoke(self, context, event):
+        if sys.platform.startswith('win'):
+            self.release_url = 'https://github.com/Pullusb/static_bin/raw/main/ffmpeg/windows/ffmpeg.exe'
+        elif sys.platform.startswith(('linux','freebsd')):
+            self.release_url = 'https://github.com/Pullusb/static_bin/raw/main/ffmpeg/linux/ffmpeg'
+        else: # Mac
+            self.release_url = 'https://github.com/Pullusb/static_bin/raw/main/ffmpeg/mac/ffmpeg'
+
+        # Check if an ffmpeg version is already in addon path
+        addon_loc = Path(__file__).parent
+        self.ffbin = addon_loc / Path(self.release_url).name
+        self.exists = self.ffbin.exists()
+        return context.window_manager.invoke_props_dialog(self, width=500)
+    
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        if self.exists:
+            col.label(text='ffmpeg is already in addon folder, delete and re-download ? (80~100 Mo)', icon='INFO')
+        else:
+            col.label(text='This will download ffmpeg static release in addon folder (80~100 Mo)', icon='INFO')
+            col.label(text='Would you like to continue ?')
+
+    def execute(self, context):
+        if self.exists:
+            self.ffbin.unlink()
+
+        # Get ffmpeg static ffmpeg bin
+        dl_url(self.release_url, str(self.ffbin))
         
         if self.ffbin.exists():
             prefs = get_addon_prefs()
@@ -198,20 +244,22 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         col = box.column()
         # col.label(text="This addon use ffmpeg to generate the waveform (need a recent version)")
         
+        col.label(text="This addon need an ffmpeg binary")
         row = col.row()
-        row.label(text="This functionallity need a recent ffmpeg binary")
+        row.operator('swd.check_ffmpeg', text='Check If FFmpeg In PATH', icon='PLUGIN')
+        row.label(text="(Need to be installed if not in PATH)")
 
-        row.operator('wm.url_open', text='FFmpeg Download Page', icon='URL').url = 'https://www.ffmpeg.org/download.html'
-        if sys.platform.startswith('win'):
-            col.operator('swd.download_ffmpeg', text='Auto-install FFmpeg (windows)', icon='IMPORT')
-
-        row = col.row()
-        row.operator('swd.check_ffmpeg', text='Check if ffmpeg in PATH', icon='PLUGIN')
-        row = col.row()
-        row.label(text="Leave field empty if ffmpeg is in system PATH")
         
-        # col.label(text="May not work if space are in path.")
-        box.prop(self, "path_to_ffmpeg")
+        row = col.row()
+        row.operator('swd.download_ffmpeg', text='Auto-install FFmpeg', icon='IMPORT')
+        row.operator('wm.url_open', text='FFmpeg Download Page', icon='URL').url = 'https://www.ffmpeg.org/download.html'
+        # if sys.platform.startswith('win'):
+        #     col.operator('swd.download_ffmpeg', text='Auto-install FFmpeg (windows)', icon='IMPORT')
+        
+        col.separator()
+        col.label(text="Alternatively, you can point to ffmpeg executable:")
+        col.label(text="(Leave field empty if ffmpeg is in system PATH)")
+        col.prop(self, "path_to_ffmpeg")
 
 
 ### --- REGISTER ---

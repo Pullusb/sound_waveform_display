@@ -376,6 +376,6 @@ def register():
 def unregister():
     disable_waveform_draw_handler()
     if 'disable_wave_on_load' in [hand.__name__ for hand in bpy.app.handlers.load_pre]:
-        bpy.app.handlers.save_pre.remove(disable_wave_on_load)
+        bpy.app.handlers.load_pre.remove(disable_wave_on_load)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
