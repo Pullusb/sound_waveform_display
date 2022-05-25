@@ -12,6 +12,11 @@ Display sound waveform in animation editors
 
 ![sound waveform display basic use demo](https://raw.githubusercontent.com/Pullusb/images_repo/master/SWD_sound_wave_display_demo_01.gif)
 
+
+## Important
+
+This addon use ffmpeg, if not already accessible on your machine, an auto-install is available in addon preferences
+
 ## Description
 
 Display scene audio sound in editor using following interface:
@@ -47,10 +52,6 @@ In the preferences you have come customizable settings:
 choose between Blocky, Very Low, Low, Medium (default), High  
 The waveform aspect will be more detailed, as you go up but will take more time to generate and take more memory.
 
-`Force Audio Mixdown` : Takes longer to display waveform, but can lead to better results  
-When using a single and unmodified sequencer strip, the original audio file will be used as signal source.  
-Checking this will always mix down to a new temporary file. (see troubleshoot below).
-
 `Verbose` : prints status and commands in console for debugging purposes.
 
 ### Where ?
@@ -61,7 +62,3 @@ Dopesheet/ Graph editor / Timeline sidebar (`N` bar) > `Display` tab > `Display 
 
 The addon use ffmpeg to generate a waveform from the sound then load it and display in editors background.
 For speaker sound or for multiple sequencer strips, audio is mixdowned into a temporary audio file -->
-
-## Troubleshooting
-
-If it does not work when you use it on a single sound from in sequencer, try enabling `Force Mixdown` in addon preferences
