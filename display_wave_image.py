@@ -163,7 +163,7 @@ class SWD_OT_enable_draw(Operator):
         vse_tgt = context.scene.swd_settings.vse_target
         # spk_tgt = context.scene.swd_settings.spk_target
         
-        force_mix = prefs.force_mixdown # Way safer to always use mixdown !
+        force_mix = True # Use mixdown !
         strip = None
 
         temp_dir = Path(tempfile.gettempdir())

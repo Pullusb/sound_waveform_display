@@ -159,11 +159,11 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         description='Set the path to ffmpeg or leave empty if ffmpeg is in your path',
         subtype='FILE_PATH')
 
-    force_mixdown : BoolProperty(
-        name="Force Audio Mixdown",
-        default=True,
-        description='Use mixdown even for displaying single audio track \
-            \nSlightly longer calculation but generally more accurate waveform')
+    # force_mixdown : BoolProperty(
+    #     name="Force Audio Mixdown",
+    #     default=True,
+    #     description='Use mixdown even for displaying single audio track \
+    #         \nSlightly longer calculation but generally more accurate waveform')
 
     wave_color: FloatVectorProperty(
         name="Waveform Color",
