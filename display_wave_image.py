@@ -9,6 +9,7 @@ from pathlib import Path
 from time import time
 from .preferences import get_addon_prefs
 from . import fn
+from bpy.app.handlers import persistent
 
 sw_coordlist = []
 handle_dope = None
@@ -88,10 +89,8 @@ def draw_callback_px(self, context):
         raise Exception()
 
     bgl.glEnable(bgl.GL_BLEND) # bgl.GL_SRGB8_ALPHA8
-    # bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
-    ## TODO:tweak transparency
 
     # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, size, size, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, pixels)
     # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, sx, sy, 0, bgl.GL_RGBA, bgl.GL_FLOAT, buf)
@@ -110,7 +109,6 @@ def draw_callback_px(self, context):
     batch.draw(shader)
 
     ## restore opengl defaults
-    # bgl.glDisable(bgl.GL_LINE_SMOOTH)
     bgl.glDisable(bgl.GL_BLEND)
 
 
@@ -153,18 +151,20 @@ class SWD_OT_enable_draw(Operator):
                 return {'CANCELLED'}
 
         ## disable handle_dope if launched
-        if handle_dope:
-            bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle_dope, 'WINDOW')
-        if handle_graph:
-            bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
+        try:
+            if handle_dope:
+                bpy.types.SpaceDopeSheetEditor.draw_handler_remove(handle_dope, 'WINDOW')
+            if handle_graph:
+                bpy.types.SpaceGraphEditor.draw_handler_remove(handle_graph, 'WINDOW')
+        except:
+            print('Handler was already removed')
+            pass
 
         ## initialize
         source = context.scene.swd_settings.source
         vse_tgt = context.scene.swd_settings.vse_target
         # spk_tgt = context.scene.swd_settings.spk_target
-        
-        force_mix = True # Use mixdown !
-        strip = None
+
 
         temp_dir = Path(tempfile.gettempdir())
         sname = 'tmp_scene_waveform.png'
@@ -191,7 +191,6 @@ class SWD_OT_enable_draw(Operator):
 
         if dbg: print('--- Display Sound Waveform')
 
-        use_mix_down = True
         sfp = mixdown_path
 
         if source == 'ALL' and not speakers:
@@ -235,38 +234,9 @@ class SWD_OT_enable_draw(Operator):
                     self.report({'ERROR'}, 'No sound strip within scene range!')
                     return {'CANCELLED'}
 
-            # If only one strip, can use disk file without mixdown
-            if len(strips) == 1:
-                strip = strips[0]    
 
-            if strip:
-                if strip.frame_offset_start != 0 or strip.frame_offset_end != 0:
-                    strip=None
-                else:
-                    sound_fp = Path(os.path.abspath(bpy.path.abspath(strip.sound.filepath)))
-                    if not sound_fp.exists():
-                        if strip.sound.packed_file:
-                            strip=None
-                        else:
-                            self.report({'ERROR'}, f'Sound not found at: {sound_fp}')
-                            return {'CANCELLED'}
+            sw_start, sw_end = fn.mixdown(filepath=mixdown_path, source=source, vse_tgt=vse_tgt)
 
-            if force_mix or not strip:
-                ## start/end  returned by mixdown range
-                sw_start, sw_end = fn.mixdown(filepath=mixdown_path, source=source, vse_tgt=vse_tgt)
-
-            else:
-                # Directly use active strip
-                if dbg: print('-> Using existing sound file from strip')
-                sw_start = strip.frame_final_start
-                sw_end = strip.frame_final_end
-                if strip.mute:
-                    self.report({'WARNING'}, f'Used sound strip is muted : {strip.name}')
-                else:
-                    self.report({'INFO'}, f'Wave from: {strip.name}')
-                sfp = Path(os.path.abspath(bpy.path.abspath(strip.sound.filepath)))
-                # use mixdown
-                use_mix_down = False
 
         if sw_start is None:
                 self.report({'ERROR'}, 'Problem mixing down sound to load waveform')
@@ -300,8 +270,7 @@ class SWD_OT_enable_draw(Operator):
         f"[0:a]aformat=channel_layouts=mono,showwavespic=s={img_res}:colors={hex_colo}:draw=full,crop=iw:ih/2:0:0",
         '-frames:v', '1', 
         '-y', str(ifp)]
-
-        # "[0:a]aformat=channel_layouts=mono,showwavespic=s=4096x1024:colors=3D82B1", # Static filter line
+        # "[0:a]aformat=channel_layouts=mono,showwavespic=s=4000x1000:colors=3D82B1", # Static filter line
         
         if dbg: print('cmd:', ' '.join(list(map(str, cmd)))) # print final cmd
 
@@ -324,15 +293,15 @@ class SWD_OT_enable_draw(Operator):
 
         sw_frames = sw_end - sw_start
         height = (sw_frames * image.size[1]) // image.size[0]
-        # print(f'image generated at {ifp}')
+        if dbg: print(f'image generated at {ifp}')
 
-        ## full image
+        ## show full image
         sw_coordlist = ((sw_start, 0),
                         (sw_end, 0),
                         (sw_end, height),
                         (sw_start, height))
 
-        ## half height position (if not cutted)
+        ## show at half-height position
         # half = height // 2
         # sw_coordlist = ((sw_start, -half),
         #                 (sw_end, -half),
@@ -351,8 +320,8 @@ class SWD_OT_enable_draw(Operator):
 
         refresh()
 
-        ## ensure to delete mixdown sound after generating waveform
-        if use_mix_down and sfp.exists() and sfp.name == tmp_sound_name:
+        ## Ensure to delete mixdown sound after generating waveform
+        if sfp.exists() and sfp.name == tmp_sound_name:
             try:
                 sfp.unlink()
             except Exception as e:
@@ -395,11 +364,18 @@ SWD_OT_enable_draw,
 SWD_OT_disable_draw,
 )
 
+@persistent
+def disable_wave_on_load(dummy):
+    disable_waveform_draw_handler()
+
 def register(): 
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.app.handlers.load_pre.append(disable_wave_on_load)
 
 def unregister():
     disable_waveform_draw_handler()
+    if 'disable_wave_on_load' in [hand.__name__ for hand in bpy.app.handlers.load_pre]:
+        bpy.app.handlers.save_pre.remove(disable_wave_on_load)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

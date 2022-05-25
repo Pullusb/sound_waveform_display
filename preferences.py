@@ -159,12 +159,6 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         description='Set the path to ffmpeg or leave empty if ffmpeg is in your path',
         subtype='FILE_PATH')
 
-    # force_mixdown : BoolProperty(
-    #     name="Force Audio Mixdown",
-    #     default=True,
-    #     description='Use mixdown even for displaying single audio track \
-    #         \nSlightly longer calculation but generally more accurate waveform')
-
     wave_color: FloatVectorProperty(
         name="Waveform Color",
         subtype='COLOR_GAMMA', # 'COLOR'
@@ -175,14 +169,12 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
 
     wave_detail : EnumProperty(
         name="Waveform details", description="Precision (by increasing resolution) of the sound waveform", 
-        default='2000x500', options={'HIDDEN', 'SKIP_SAVE'},
+        default='4000x1000', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            # ('500x100', 'Blocky', 'Resolution of the generated wave image', 0),
-            ('1000x200', 'Very Low', 'Resolution of the generated wave image', 0),
-            ('2000x500', 'Low', 'Resolution of the generated wave image', 1),
-            ('4000x1000', 'Medium', 'Resolution of the generated wave image', 2),
-            ('8000x2000', 'High', 'Resolution of the generated wave image', 3),
-            ('12000x3000', 'Very High', 'Resolution of the generated wave image', 4), # too high
+            ('2000x500', 'Low', 'Resolution of the generated wave image', 0),
+            ('4000x1000', 'Medium', 'Resolution of the generated wave image', 1),
+            ('8000x2000', 'High', 'Resolution of the generated wave image', 2),
+            ('12000x3000', 'Very High', 'Resolution of the generated wave image', 3), # too high
             ))
 
     debug : BoolProperty(
@@ -199,7 +191,6 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         box.label(text='Waveform Options:')
         box.prop(self, "wave_color")
         box.prop(self, "wave_detail")
-        # box.prop(self, "force_mixdown")
         box.prop(self, "debug")
 
         box = layout.box()

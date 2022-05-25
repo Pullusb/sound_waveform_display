@@ -5,6 +5,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.8.0] - 2022-05-25
+
+### Changed
+
+- default detail is `Medium`
+- code: removed non-mixdown method
+
+### Fixed
+
+- disable draw handler on load. avoid error in console when loading another blend.
+
 ## [0.7.0] - 2022-05-25
 
 ### Fixed
