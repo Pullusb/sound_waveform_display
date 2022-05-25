@@ -322,7 +322,8 @@ class SWD_OT_enable_draw(Operator):
 
         image = bpy.data.images.load(str(ifp), check_existing=False)
 
-        height = ((sw_end - sw_start) * image.size[1]) // image.size[0]
+        sw_frames = sw_end - sw_start
+        height = (sw_frames * image.size[1]) // image.size[0]
         # print(f'image generated at {ifp}')
 
         ## full image

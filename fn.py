@@ -2,7 +2,7 @@ import bpy
 import tempfile
 from pathlib import Path
 from time import time
-
+import math
 from .preferences import get_addon_prefs
 
 ## context manager
@@ -50,12 +50,21 @@ def get_sound_strip_in_scene_range(vse=None):
     
     return strips
 
+def round_to_second(start, end):
+    '''get a new end so duration is up to one second'''
+    fps = bpy.context.scene.render.fps
+    frame_count = end - start
+    round_count = math.ceil(frame_count / fps) * fps
+    end = start + round_count
+    return start, end
+
 def get_start_end(strip_list):
     start = min([s.frame_final_start for s in strip_list])
     end = max([s.frame_final_end for s in strip_list])
-    return start, end
+    return round_to_second(start, end)
 
 def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
+    
     ''' mixdon audio at filepath accoding to filters
     source in (ALL, SEQUENCER, SPEAKER)
     vse_tgt in (SELECTED, UNMUTED, SCENE)
@@ -63,9 +72,11 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     prefs = get_addon_prefs()
     scn = bpy.context.scene
     vse = scn.sequence_editor
+    # print('source: ', source)#Dbg
+    # print('vse_tgt: ', vse_tgt)#Dbg
     
     ## unmute playback (also mute mixdown)
-    ## note for later: use_audio might change in API since mean the opposite
+    ## note for later: use_audio might change in API (since name mean the opposite)
     temp_changes = [(scn, 'use_audio', False)]
     
     ## default to scene range
@@ -74,7 +85,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     if source == 'ALL':
         # simplest, nothing to change... mixdown scene as it is
         pass
-    
+
     elif source == 'SPEAKERS':
         ## Mute every audible vse strips
         temp_changes += [(s, 'mute', True) for s in vse.sequences if s.type == 'SOUND' and not s.mute]
@@ -99,20 +110,13 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             # override start/end if within range
             if strips_start > scn.frame_start: 
                 start = strips_start
-                temp_changes.append((scn, 'frame_start', start))
             if strips_end < scn.frame_end:
                 end = strips_end
-                temp_changes.append((scn, 'frame_end', end),)
 
         elif vse_tgt == 'UNMUTED':
             # unmuted range (no need to render the whole )
             unmuted = [s for s in vse.sequences if s.type == 'SOUND' and not s.mute]
             start, end = get_start_end(unmuted)
-
-            temp_changes += [
-                (scn, 'frame_start', start),
-                (scn, 'frame_end', end),
-                ]
 
         else: # SELECTED or LIST
             if vse_tgt == 'SELECTED':
@@ -123,11 +127,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             # get range
             start, end = get_start_end(selected_strips)
 
-            temp_changes += [
-                # (scn, 'use_preview_range', False) # not affected by preview range
-                (scn, 'frame_start', start),
-                (scn, 'frame_end', end),
-                ]
+            # temp_changes += [(scn, 'use_preview_range', False) # not affected by preview range]
 
             # one-liner : temp_changes += [(s, 'mute', not s.select) for s in vse.sequences if s.type == 'SOUND']
             
@@ -138,6 +138,11 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             ## unmute selected strips (can be counter-logic to some...)
             temp_changes += [(s, 'mute', False) for s in selected_strips]
 
+    start, end = round_to_second(start, end) # round to second to avoid lost in precision with ffmpeg
+    temp_changes += [
+            (scn, 'frame_start', start),
+            (scn, 'frame_end', end),
+            ]
     # for i in temp_changes: print(i) # Dbg
 
     with attr_set(temp_changes):
@@ -148,14 +153,15 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
         # FLAC-FLAC = 0.450, 
         # MP3-MP3 = 0.8 
         # OGG-VORBIS = 1.114 ~ 1.313, 
+
         ret = bpy.ops.sound.mixdown(filepath=str(filepath), check_existing=False, relative_path=False,
-        accuracy=1024,
+        accuracy=128, # lower than 32 crash blender # default 1024
         
         container='WAV', # ('AC3', 'FLAC', 'MATROSKA', 'MP2', 'MP3', 'OGG', 'WAV') 
         codec='PCM', # ('AAC', 'AC3', 'FLAC', 'MP2', 'MP3', 'PCM', 'VORBIS')
         
-        format='S16', # ('U8', 'S16', 'S24', 'S32', 'F32', 'F64')
-        bitrate=128, # default 192 [32, 512]
+        # format='S16', # ('U8', 'S16', 'S24', 'S32', 'F32', 'F64')
+        bitrate=32, # default 192 [32, 512]
         split_channels=False)
 
         if prefs.debug: print(f'Mixdown time: {time() - t0:.3f}s')

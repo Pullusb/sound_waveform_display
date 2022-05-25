@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.7.0] - 2022-05-25
+
+### Fixed
+
+- waveform now in correct position
+- faster generation with lower bitrate proxy
+- removed option to disable mixdown (can cause bad precision)
+
 ## [0.6.3] - 2022-05-22
 
 ### Fixed
