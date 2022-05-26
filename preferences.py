@@ -3,6 +3,7 @@ import sys
 import shutil
 import zipfile
 from pathlib import Path
+import urllib.request
 from bpy.props import (FloatProperty,
                         BoolProperty,
                         EnumProperty,
@@ -88,6 +89,22 @@ def dl_url(url, dest):
     with urllib.request.urlopen(url) as response, open(dest, 'wb') as out_file:
         shutil.copyfileobj(response, out_file)
     print(f"Download time {time.time() - start_time:.2f}s",)
+
+def simple_dl_url(url, dest, fallback_url=None):
+    ## need to import urllib.request or linux module does not found 'request' using urllib directly
+    ## need to create an SSl context or linux fail returning unverified ssl
+    
+    if sys.platform.startswith(('linux','freebsd')):
+        import ssl
+        ssl._create_default_https_context = ssl._create_unverified_context
+
+    try:
+        urllib.request.urlretrieve(url, dest)
+    except Exception as e:
+        print('Error trying to download\n', e)
+        if fallback_url:
+            print('\nDownload page for manual install:', fallback_url)
+        return e
 
 def unzip(zip_path, extract_dir_path):
     '''Get a zip path and a directory path to extract to'''
@@ -186,8 +203,9 @@ class SWD_OT_download_ffmpeg(bpy.types.Operator):
         if self.exists:
             self.ffbin.unlink()
 
-        # Get ffmpeg static ffmpeg bin
-        dl_url(self.release_url, str(self.ffbin))
+        ## Get ffmpeg static ffmpeg bin
+        # dl_url(self.release_url, str(self.ffbin))
+        simple_dl_url(self.release_url, str(self.ffbin), fallback_url='https://www.ffmpeg.org/download.html')
         
         if self.ffbin.exists():
             prefs = get_addon_prefs()
@@ -217,10 +235,10 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         name="Waveform details", description="Precision (by increasing resolution) of the sound waveform", 
         default='4000x1000', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
-            ('2000x500', 'Low', 'Resolution of the generated wave image', 0),
-            ('4000x1000', 'Medium', 'Resolution of the generated wave image', 1),
-            ('8000x2000', 'High', 'Resolution of the generated wave image', 2),
-            ('12000x3000', 'Very High', 'Resolution of the generated wave image', 3), # too high
+            # ('2000x500', 'Low', 'Resolution of the generated wave image', 0),
+            ('4000x1000', 'Medium', 'Resolution of the generated wave image', 0),
+            ('8000x2000', 'High', 'Resolution of the generated wave image', 1),
+            ('12000x3000', 'Very High', 'Resolution of the generated wave image', 2), # too high
             ))
 
     debug : BoolProperty(
