@@ -138,6 +138,12 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             ## unmute selected strips (can be counter-logic to some...)
             temp_changes += [(s, 'mute', False) for s in selected_strips]
 
+    if start < 0:
+        # Clamp start to zero (can't mixdown in negative)
+        start = 0
+    if end < 0:
+        return None, 'Sound is before frame 0'
+
     start, end = round_to_second(start, end) # round to second to avoid lost in precision with ffmpeg
     temp_changes += [
             (scn, 'frame_start', start),
@@ -168,7 +174,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
 
     if ret != {'FINISHED'}:
         print(ret)
-        return None, None
+        return None, 'Problem mixing down sound to load waveform'
         
     return start, end
 

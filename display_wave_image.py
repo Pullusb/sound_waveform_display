@@ -239,7 +239,7 @@ class SWD_OT_enable_draw(Operator):
 
 
         if sw_start is None:
-                self.report({'ERROR'}, 'Problem mixing down sound to load waveform')
+                self.report({'ERROR'}, sw_end)
                 return {'CANCELLED'}
 
         if dbg: print('sound path: ', sfp)

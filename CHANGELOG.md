@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+
+## [0.8.2] - 2022-05-29
+
+### Fixed
+
+- Fixed error when sound overlap with negative frames
+- Raise error message if strip is before frame 0
+
 ## [0.8.1] - 2022-05-26
 
 ### Fixed
