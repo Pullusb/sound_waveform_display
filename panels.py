@@ -4,11 +4,11 @@ from .preferences import get_addon_prefs
 
 class SWD_PT_quick_pref_ui(Panel):
     bl_label = "Sound waveform quick prefs"
-    # bl_idname = "SWD_PT_quick_pref_ui"
-    bl_options = {'INSTANCED'}
     bl_space_type = 'GRAPH_EDITOR'
     bl_region_type = 'UI'
-    bl_context = "Display"
+    bl_category = "Display"
+    bl_options = {'INSTANCED'}
+    # bl_context = "Display"
 
     def draw(self, context):
         prefs = get_addon_prefs()
