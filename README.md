@@ -2,6 +2,8 @@
 
 Display sound waveform in animation editors
 
+**[Get it on Gumroad](https://pullusb.gumroad.com/l/sound_waveform_display)**
+
 **[Download latest](https://github.com/Pullusb/sound_waveform_display/archive/refs/heads/main.zip)**
 
 <!-- ### [Demo Youtube]() -->
