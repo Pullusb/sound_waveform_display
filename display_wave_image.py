@@ -167,7 +167,7 @@ class SWD_OT_enable_draw(Operator):
 
 
         temp_dir = Path(tempfile.gettempdir())
-        sname = 'tmp_scene_waveform.png'
+        sname = '.tmp_scene_waveform.png'
         tmp_sound_name = 'tmp_scene_mixdown.wav'
         ifp = temp_dir / sname # temp files
         mixdown_path = temp_dir / tmp_sound_name

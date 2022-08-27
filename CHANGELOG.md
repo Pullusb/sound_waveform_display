@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.8.4] - 2022-08-28
+
+### Changed
+
+- prevent waveform Image from bring accessible in blender image editor (no file cluttering)
+
 ## [0.8.3] - 2022-06-03
 
 ### Fixed
