@@ -6,7 +6,7 @@ Display sound waveform in animation editors
 
 **[Download latest](https://github.com/Pullusb/sound_waveform_display/archive/refs/heads/main.zip)**
 
-<!-- ### [Demo Youtube]() -->
+### [Demo Youtube](https://www.youtube.com/watch?v=N7i5m417wGY)
 
 > Note: This addon needs ffmpeg in your path to work (on windows a button in addon pref allows an auto install)
 
