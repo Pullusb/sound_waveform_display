@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.8.5] - 2022-09-13
+
+### Fixed
+
+- when binary exists in folder, make the check platform dependant (linux took `ffmpeg.exe`)
+
 ## [0.8.4] - 2022-08-28
 
 ### Changed

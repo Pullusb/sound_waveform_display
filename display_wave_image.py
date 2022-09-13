@@ -126,7 +126,11 @@ class SWD_OT_enable_draw(Operator):
 
         prefs = get_addon_prefs()
         dbg = prefs.debug
-        ffbin = Path(__file__).parent / 'ffmpeg.exe'
+
+        if sys.platform.lower().startswith('win'):
+            ffbin = Path(__file__).parent / 'ffmpeg.exe'
+        else:
+            ffbin = Path(__file__).parent / 'ffmpeg'
 
         cmd = ['ffmpeg',]
 
