@@ -232,7 +232,7 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         description="Color of the waveform")
 
     wave_detail : EnumProperty(
-        name="Waveform details", description="Precision (by increasing resolution) of the sound waveform", 
+        name="Waveform Details", description="Precision (by increasing resolution) of the sound waveform", 
         default='4000x1000', options={'HIDDEN', 'SKIP_SAVE'},
         items=(
             # ('2000x500', 'Low', 'Resolution of the generated wave image', 0),
@@ -241,10 +241,19 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
             ('12000x3000', 'Very High', 'Resolution of the generated wave image', 2), # too high
             ))
 
+    height_mode : EnumProperty(
+        name="Waveform Height", description="How waveform size adapt to editor height", 
+        default='RELATIVE', options={'HIDDEN', 'SKIP_SAVE'},
+        items=(
+            ('RELATIVE', 'Relative', 'Waveform size is relative and adapt to editor hieght', 0),
+            ('ABSOLUTE', 'Absolute', 'Waveform size is absolute and do not change according to editor size', 1),
+            ))
+
     debug : BoolProperty(
         name="Verbose Mode",
         description="Verbose/Debug mode. Enable prints in console to follow script behavior",
         default=False, options={'HIDDEN'})
+
 
     def draw(self, context):
         layout = self.layout
@@ -255,6 +264,7 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         box.label(text='Waveform Options:')
         box.prop(self, "wave_color")
         box.prop(self, "wave_detail")
+        box.prop(self, "height_mode")
         box.prop(self, "debug")
 
         box = layout.box()

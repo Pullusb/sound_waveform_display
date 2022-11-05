@@ -15,6 +15,7 @@ sw_coordlist = []
 handle_dope = None
 handle_graph = None
 image = None
+height_mode = 'RELATIVE'
 
 def show_message_box(_message = "", _title = "Message Box", _icon = 'INFO'):
     '''Show message box with element passed as string or list
@@ -72,9 +73,18 @@ def draw_callback_px(self, context):
         [context.region.view2d.view_to_region(co[0], 0, clip=False)[0], (co[1])+margin]\
         for co in sw_coordlist]
 
+
     ## Absolute offset
-    coords[2][1] += context.scene.swd_settings.height_offset
-    coords[3][1] += context.scene.swd_settings.height_offset
+    if height_mode == 'RELATIVE':
+        ## relative height offset
+        height = sw_coordlist[3][1]
+        ratio = (context.region.height * height) / 1000
+        final_height = (coords[2][1] + context.scene.swd_settings.height_offset) * ratio
+        coords[3][1] = coords[2][1] = final_height
+    else:
+        coords[2][1] += context.scene.swd_settings.height_offset * 10
+        coords[3][1] += context.scene.swd_settings.height_offset * 10
+
 
     shader = gpu.shader.from_builtin('2D_IMAGE')
     batch = batch_for_shader(
@@ -122,9 +132,11 @@ class SWD_OT_enable_draw(Operator):
         global sw_coordlist
         global handle_dope
         global handle_graph
+        global height_mode
         global image
 
         prefs = get_addon_prefs()
+        height_mode = prefs.height_mode
         dbg = prefs.debug
 
         if sys.platform.lower().startswith('win'):

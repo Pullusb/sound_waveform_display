@@ -5,6 +5,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.9.0] - 2022-11-05
+
+### Added
+
+- _Relative height_ mode to adapt wave height when windows are resized
+- Choose height adapt mode in preference between absolute or relative (new default)
+
+### Changed
+
+- Absolute height offset value use now a multiplicator _x10_ (tweak value where always high)
+
 ## [0.8.5] - 2022-09-13
 
 ### Fixed
