@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [0.9.1] - 2023-01-12
+
+### Fixed
+
+- Check for ffmpeg not considering linux or mac exec
+
 ## [0.9.0] - 2022-11-05
 
 ### Added

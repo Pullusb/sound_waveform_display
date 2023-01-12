@@ -24,7 +24,7 @@ class SWD_UL_sound_list(bpy.types.UIList):
         # layout.prop(strip, "name", text="", emboss=False) # , icon_value=icon
         ## non editable name
         layout.label(text=strip.name)
-   
+
     def draw_filter(self, context, layout):
         row = layout.row()
         subrow = row.row(align=True)
@@ -56,17 +56,17 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
     #     name="str prop",
     #     description="",
     #     default="")# update=None, get=None, set=None
-    
+
     use_graph : BoolProperty(
         name="Graph",
         description="Enable display in graph editor",
         default=True, options={'HIDDEN'})
-    
+
     use_dope : BoolProperty(
         name="Dopesheet",
         description="Enable display in dopesheet editor",
         default=True, options={'HIDDEN'})
-    
+
     use_time : BoolProperty(
         name="Timeline",
         description="Enable display in timeline editor",
@@ -75,7 +75,6 @@ class SWD_PGT_settings(bpy.types.PropertyGroup):
     height_offset : IntProperty(
         name="Height Offset", description="Adjust the height of the waveform", 
         default=0, min=-10000, max=10000, soft_min=-5000, soft_max=5000, step=1, options={'HIDDEN'})#, subtype='PIXEL'
-    
 
     color : FloatVectorProperty(
         name="Color", description="Get wanted color (need relaunch)", default=(0.0368, 0.1714, 0.3371),
@@ -125,7 +124,7 @@ def register():
     # bpy.utils.register_class(SWD_PGT_settings)
     bpy.types.Scene.swd_settings = bpy.props.PointerProperty(type = SWD_PGT_settings)
     # bpy.utils.register_class(SWD_UL_sound_list)
-    
+
 
 def unregister():
     for cls in reversed(classes):

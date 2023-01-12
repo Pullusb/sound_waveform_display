@@ -192,15 +192,15 @@ class SWD_OT_enable_draw(Operator):
         vse = context.scene.sequence_editor
         all_sound_strips = [s for s in vse.sequences if s.type == 'SOUND']
         speakers = [o for o in context.scene.objects if o.type == 'SPEAKER' and not o.data.muted and not o.hide_viewport]
-        
+
         if source == 'ALL' and not all_sound_strips and not speakers:
             self.report({'ERROR'}, 'No sound strip in sequencer and no speaker in scene!')
             return {'CANCELLED'}
-        
+
         if source == 'SEQUENCER' and not all_sound_strips:
             self.report({'ERROR'}, 'No sound strip in sequencer!')
             return {'CANCELLED'}
-        
+
         if source == 'SPEAKERS' and not speakers:
             self.report({'ERROR'}, 'No unmuted speaker in scene!')
             return {'CANCELLED'}
@@ -227,7 +227,7 @@ class SWD_OT_enable_draw(Operator):
                 if not strips:
                     self.report({'ERROR'}, 'No selected sound strip!')
                     return {'CANCELLED'}
-            
+
             if vse_tgt == 'LIST':
                 if context.scene.swd_settings.seq_idx < 0:
                     self.report({'ERROR'}, 'Must select a sound in list')
@@ -287,7 +287,7 @@ class SWD_OT_enable_draw(Operator):
         '-frames:v', '1', 
         '-y', str(ifp)]
         # "[0:a]aformat=channel_layouts=mono,showwavespic=s=4000x1000:colors=3D82B1", # Static filter line
-        
+
         if dbg: print('cmd:', ' '.join(list(map(str, cmd)))) # print final cmd
 
         t0 = time()

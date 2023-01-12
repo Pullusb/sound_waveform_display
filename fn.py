@@ -47,7 +47,7 @@ def get_sound_strip_in_scene_range(vse=None):
     strips =  [s for s in vse.sequences if s.type == 'SOUND' \
         and not s.mute \
         and not (s.frame_final_end <= scn.frame_start or s.frame_final_start >= scn.frame_end)]
-    
+
     return strips
 
 def round_to_second(start, end):
@@ -64,7 +64,6 @@ def get_start_end(strip_list):
     return round_to_second(start, end)
 
 def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
-    
     ''' mixdon audio at filepath accoding to filters
     source in (ALL, SEQUENCER, SPEAKER)
     vse_tgt in (SELECTED, UNMUTED, SCENE)
@@ -74,11 +73,11 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     vse = scn.sequence_editor
     # print('source: ', source)#Dbg
     # print('vse_tgt: ', vse_tgt)#Dbg
-    
+
     ## unmute playback (also mute mixdown)
     ## note for later: use_audio might change in API (since name mean the opposite)
     temp_changes = [(scn, 'use_audio', False)]
-    
+
     ## default to scene range
     start, end = scn.frame_start, scn.frame_end
 
@@ -95,7 +94,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
 
         ## muting speaker data NOT working, need to use speaker -> NLA tracks -> strips
         # temp_changes = [(s, 'muted', True) for s in bpy.data.speakers if not s.muted]
-        
+
         ## muting NLA tracks of speaker object
         for o in [o for o in scn.objects if o.type == 'SPEAKER' and not o.data.muted and not o.hide_viewport]:
             if not o.animation_data or not o.animation_data.nla_tracks:
@@ -103,7 +102,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
             temp_changes += [(s, 'mute', True) for t in o.animation_data.nla_tracks for s in t.strips]
 
         if vse_tgt == 'SCENE':
-            
+
             ## Optimise by reducing range to first/last audible strips if inside SCENE
             strips = get_sound_strip_in_scene_range(vse)
             strips_start, strips_end = get_start_end(strips)
@@ -123,14 +122,14 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
                 selected_strips = [s for s in vse.sequences if s.type == 'SOUND' and (s.select or s == vse.active_strip)]
             else: # LIST
                 selected_strips = [vse.sequences[scn.swd_settings.seq_idx]]
-            
+
             # get range
             start, end = get_start_end(selected_strips)
 
             # temp_changes += [(scn, 'use_preview_range', False) # not affected by preview range]
 
             # one-liner : temp_changes += [(s, 'mute', not s.select) for s in vse.sequences if s.type == 'SOUND']
-            
+
             ## mute non selected strips
             unselected_strips = [s for s in vse.sequences if s.type == 'SOUND' and not s.select]
             temp_changes += [(s, 'mute', True) for s in unselected_strips]
@@ -162,10 +161,10 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
 
         ret = bpy.ops.sound.mixdown(filepath=str(filepath), check_existing=False, relative_path=False,
         accuracy=128, # lower than 32 crash blender # default 1024
-        
+
         container='WAV', # ('AC3', 'FLAC', 'MATROSKA', 'MP2', 'MP3', 'OGG', 'WAV') 
         codec='PCM', # ('AAC', 'AC3', 'FLAC', 'MP2', 'MP3', 'PCM', 'VORBIS')
-        
+
         # format='S16', # ('U8', 'S16', 'S24', 'S32', 'F32', 'F64')
         bitrate=32, # default 192 [32, 512]
         split_channels=False)
@@ -175,7 +174,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     if ret != {'FINISHED'}:
         print(ret)
         return None, 'Problem mixing down sound to load waveform'
-        
+
     return start, end
 
 def hex_to_rgb(hex, base_one=True) -> tuple:
