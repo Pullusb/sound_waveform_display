@@ -116,7 +116,7 @@ def unzip(zip_path, extract_dir_path):
         zip_ref.extractall(extract_dir_path)
 
 class SWD_OT_download_ffmpeg(bpy.types.Operator):
-    """Download if ffmpeg is in path"""
+    """Download if ffmpeg is not in path"""
     bl_idname = "swd.download_ffmpeg"
     bl_label = "Download ffmpeg"
     bl_options = {'REGISTER', 'INTERNAL'}
@@ -199,6 +199,11 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         description="Verbose/Debug mode. Enable prints in console to follow script behavior",
         default=False, options={'HIDDEN'})
 
+    show_help : BoolProperty(
+        name="Help for manual ffmpeg install",
+        description="This addon need ffmpeg, This quick help show the step for manual installation",
+        default=False, options={'HIDDEN'})
+
 
     def draw(self, context):
         layout = self.layout
@@ -213,26 +218,83 @@ class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
         box.prop(self, "debug")
 
         box = layout.box()
-        box.label(text='FFmpeg check and installation:')
+        box.label(text='FFmpeg check and auto-installation:')
         col = box.column()
         # col.label(text="This addon use ffmpeg to generate the waveform (need a recent version)")
 
-        col.label(text="This addon need an ffmpeg binary")
+        col.label(text="This addon need an ffmpeg binary (Need to be installed if not in PATH)")
         row = col.row()
         row.operator('swd.check_ffmpeg', text='Check If FFmpeg In PATH', icon='PLUGIN')
-        row.label(text="(Need to be installed if not in PATH)")
-
-
-        row = col.row()
+        # row = col.row()
         row.operator('swd.download_ffmpeg', text='Auto-install FFmpeg', icon='IMPORT')
-        row.operator('wm.url_open', text='FFmpeg Download Page', icon='URL').url = 'https://www.ffmpeg.org/download.html'
-        # if sys.platform.startswith('win'):
-        #     col.operator('swd.download_ffmpeg', text='Auto-install FFmpeg (windows)', icon='IMPORT')
+
+        # row.operator("wm.call_menu", text="Ffmpeg Manual Install Help", icon='HELP').name = "SWD_MT_help_ffmpeg_install"
+        # row.operator('wm.url_open', text='FFmpeg Download Page', icon='URL').url = 'https://www.ffmpeg.org/download.html'
 
         col.separator()
         col.label(text="Alternatively, you can point to ffmpeg executable:")
-        col.label(text="(Leave field empty if ffmpeg is in system PATH)")
+        col.label(text="(Can leave field empty if ffmpeg is in system PATH or executable is in addon folder)")
         col.prop(self, "path_to_ffmpeg")
+        
+
+        ## Manual install helper (big button)
+        box = layout.box()
+        title_row = box.row()
+        title_row.use_property_split = False
+        title_row.scale_y = 2
+        title_row.prop(self, 'show_help', icon='HELP')
+
+        if self.show_help:
+            help_infos(box)
+
+
+def help_infos(layout):
+
+    col = layout.column()
+    col.label(text='FFmpeg Manual Installation')
+    col.separator()
+    col.label(text='If the auto-install fails, here are steps for manual installation')
+    
+    ## Direct download links
+    if sys.platform.startswith('win'):
+        user_os = 'Windows'
+        release_url = 'https://github.com/Pullusb/static_bin/raw/main/ffmpeg/windows/ffmpeg.exe'
+    elif sys.platform.startswith(('linux','freebsd')):
+        user_os = 'Linux'
+        release_url = 'https://github.com/Pullusb/static_bin/raw/main/ffmpeg/linux/ffmpeg'
+    else: # Mac
+        user_os = 'Mac'
+        release_url = 'https://github.com/Pullusb/static_bin/raw/main/ffmpeg/mac/ffmpeg'
+    
+    col.label(text='Step 1: Download ffmpeg', icon='IMPORT')
+
+    col.label(text="Direct download link (From dedicated Pullusb repository):")
+    col.operator('wm.url_open', text=f'Direct Download FFmpeg for {user_os}', icon='URL').url = release_url
+    if user_os == 'Mac':
+        col.label(text='/!\ Note for Mac user: This ffmpeg bin is not compatible with Mac M1!')
+    
+    col.separator()
+    col.label(text='Alternative Step 1: Download ffmpeg yourself from ffmpeg website:', icon='IMPORT')
+    col.operator('wm.url_open', text='FFmpeg Download Page', icon='URL').url = 'https://www.ffmpeg.org/download.html'
+
+    col.separator()
+    col.separator()
+    col.label(text='Step 2: Move it into addon', icon='PASTEDOWN')
+    col.label(text="Copy ffmpeg file into addon folder")
+    col.operator('wm.path_open', text='Click here to open addon folder', icon='FILE_FOLDER').filepath = str(Path(__file__).parent)
+    
+    col.separator()
+    col.label(text='Alternative Step 2: Enter ffmpeg path', icon='PASTEDOWN')
+    col.label(text="Tell the addon which file to execute if not placed in addon folder")
+    col.prop(get_addon_prefs(), 'path_to_ffmpeg')
+
+
+# class SWD_MT_help_ffmpeg_install(bpy.types.Menu):
+#     bl_label = "Help FFmpeg Install"
+#     def draw(self, context):
+#         layout = self.layout
+
+#         help_infos(layout)
 
 
 ### --- REGISTER ---
@@ -241,6 +303,7 @@ classes=(
 SWD_OT_open_addon_prefs,
 SWD_OT_check_ffmpeg,
 SWD_OT_download_ffmpeg,
+# SWD_MT_help_ffmpeg_install,
 SWD_sound_waveform_display_addonpref,
 )
 
