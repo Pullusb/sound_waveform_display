@@ -2,7 +2,6 @@ import bpy, os, sys, shutil
 import subprocess
 import tempfile
 import gpu
-import bgl
 from gpu_extras.batch import batch_for_shader
 from bpy.types import Operator
 from pathlib import Path
@@ -95,31 +94,98 @@ def draw_callback_px(self, context):
         },
     )
 
-    if image.gl_load():
-        raise Exception()
+    use_bgl = True
+    if use_bgl:
+        import bgl
+        if image.gl_load():
+            raise Exception()
+        
+        bgl.glEnable(bgl.GL_BLEND) # bgl.GL_SRGB8_ALPHA8
+        bgl.glActiveTexture(bgl.GL_TEXTURE0)
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
 
-    bgl.glEnable(bgl.GL_BLEND) # bgl.GL_SRGB8_ALPHA8
-    bgl.glActiveTexture(bgl.GL_TEXTURE0)
-    bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
+        bgl.glBlendFunc(bgl.GL_ONE, bgl.GL_ONE) # overlay with a kind of additive filter
 
-    # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, size, size, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, pixels)
-    # bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA, sx, sy, 0, bgl.GL_RGBA, bgl.GL_FLOAT, buf)
+        shader.bind()
 
-    # bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA) # same as default ?
-    # bgl.glBlendFunc(bgl.GL_DST_COLOR, bgl.GL_ZERO) # alpha is black
-    bgl.glBlendFunc(bgl.GL_ONE, bgl.GL_ONE) # overlay with a kind of additive filter
-    # bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE)
+        bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_NEAREST)
+        bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_NEAREST)
 
-    shader.bind()
+        shader.uniform_int("image", 0)
+        batch.draw(shader)
 
-    bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_NEAREST)
-    bgl.glTexParameterf(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER, bgl.GL_NEAREST)
+        bgl.glDisable(bgl.GL_BLEND)
+    
+    else:
+        texture = gpu.texture.from_image(image)
+        ## gpu.state.depth_mask_set(True)
+        ## gpu.state.depth_test_set('LESS_EQUAL')
+        ## gpu.state.blend_set('ALPHA')
+        gpu.state.blend_set('ADDITIVE') # _PREMULT
+        shader.uniform_sampler("image", texture)
+        ## TODO : find equivalent to NEAREST texture filter
+        ## Should be like thiks
+        # shader.uniform_sampler("image", texture, 
+        #                        filter='NEAREST', repeat=[False, False, False], 
+        #                        use_mipmap=False, clamp_to_border_color=False, 
+        #                        compare_enabled=False)
+        
+        shader.bind()
+        batch.draw(shader)
+        gpu.state.blend_set('NONE')
 
-    shader.uniform_int("image", 0)
-    batch.draw(shader)
+        '''
+        texture = gpu.texture.from_image(image)
+        gpu.state.blend_set('ADDITIVE')
+        
+        # vertex_shader, fragment_shader = gpu.shader.code_from_builtin("2D_IMAGE").values()
+        vertex_shader = """
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+in vec2 pos;
+in vec2 uv;
+out vec2 v_uv;
+void main() {
+    v_uv = uv;
+    gl_Position = projectionMatrix * viewMatrix * vec4(pos, 0.0, 1.0);
+}
+"""
 
-    ## restore opengl defaults
-    bgl.glDisable(bgl.GL_BLEND)
+        vertex_shader = """
+in vec3 position;
+out vec3 pos;
+
+void main()
+{
+    gl_Position = vec4(position, 1.0f);
+}
+"""
+
+
+        # uniform float threshold;
+        fragment_shader = """
+in vec2 TexCoord;
+out vec4 FragColor;
+
+uniform sampler2D src_tex;
+
+void main()
+{
+    vec4 texColor = texture(src_tex, TexCoord);
+    if (texColor.a > 0.5) {
+        FragColor = vec4(texColor.rgb, 1.0);
+    } else {
+        FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    }
+}
+"""
+        # alpha_clip_shader = gpu.types.GPUShader(vertexcode=vertex_shader, fragcode=fragment_shader)
+        alpha_clip_shader = gpu.types.GPUShader(vertex_shader, fragment_shader)
+        alpha_clip_shader.bind()
+        alpha_clip_shader.uniform_sampler("src_tex", texture)
+        batch.draw(alpha_clip_shader)
+        gpu.state.blend_set('NONE')
+        '''
 
 
 class SWD_OT_enable_draw(Operator):
