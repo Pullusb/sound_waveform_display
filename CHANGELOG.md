@@ -5,6 +5,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [1.0.0] - 2023-11-19
+
+### Fixed
+
+- API changes: update for with blender 4.0 (with retro-compatibility)
+
 ## [0.9.2] - 2023-01-14
 
 ### Added

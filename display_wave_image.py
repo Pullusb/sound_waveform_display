@@ -85,7 +85,7 @@ def draw_callback_px(self, context):
         coords[3][1] += context.scene.swd_settings.height_offset * 10
 
 
-    shader = gpu.shader.from_builtin('2D_IMAGE')
+    shader = gpu.shader.from_builtin('IMAGE')
     batch = batch_for_shader(
         shader, 'TRI_FAN',
         {
@@ -94,7 +94,7 @@ def draw_callback_px(self, context):
         },
     )
 
-    use_bgl = True
+    use_bgl = bpy.app.version < (4,0,0)
     if use_bgl:
         import bgl
         if image.gl_load():
@@ -123,8 +123,9 @@ def draw_callback_px(self, context):
         ## gpu.state.blend_set('ALPHA')
         gpu.state.blend_set('ADDITIVE') # _PREMULT
         shader.uniform_sampler("image", texture)
-        ## TODO : find equivalent to NEAREST texture filter
-        ## Should be like thiks
+        
+        ## TODO (when API allow) : Find gpu module equivalent to NEAREST texture filter
+        ## something like :
         # shader.uniform_sampler("image", texture, 
         #                        filter='NEAREST', repeat=[False, False, False], 
         #                        use_mipmap=False, clamp_to_border_color=False, 
