@@ -5,11 +5,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [1.0.1] - 2024-03-01
+
+### Fixed
+
+- API changes: update for blender 4.1+ (with retro-compatibility)
+
 ## [1.0.0] - 2023-11-19
 
 ### Fixed
 
-- API changes: update for with blender 4.0 (with retro-compatibility)
+- API changes: update for blender 4.0 (with retro-compatibility)
 
 ## [0.9.2] - 2023-01-14
 

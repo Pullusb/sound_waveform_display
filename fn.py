@@ -74,9 +74,12 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
     # print('source: ', source)#Dbg
     # print('vse_tgt: ', vse_tgt)#Dbg
 
-    ## unmute playback (also mute mixdown)
-    ## note for later: use_audio might change in API (since name mean the opposite)
-    temp_changes = [(scn, 'use_audio', False)]
+    ## Unmute playback (also mute mixdown)
+    if bpy.app.version < (4,1,0):
+        ## Old name in API name meant the opposite (using 'Mute' as label)
+        temp_changes = [(scn, 'use_audio', False)]
+    else:
+        temp_changes = [(scn, 'use_audio', True)]
 
     ## default to scene range
     start, end = scn.frame_start, scn.frame_end
