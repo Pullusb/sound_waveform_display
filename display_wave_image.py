@@ -403,6 +403,9 @@ class SWD_OT_enable_draw(Operator):
 
         refresh()
 
+        if prefs.debug:
+            return {'FINISHED'}
+    
         ## Ensure to delete mixdown sound after generating waveform
         if sfp.exists() and sfp.name == tmp_sound_name:
             try:
