@@ -1,4 +1,4 @@
-import bpy, os, sys, shutil
+import bpy, sys, shutil
 import subprocess
 import tempfile
 import gpu
