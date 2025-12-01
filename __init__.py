@@ -14,7 +14,6 @@ from . import properties
 from . import preferences
 from . import display_wave_image
 from . import panels
-# from . import keymaps
 
 import bpy
 
@@ -26,12 +25,10 @@ def register():
     preferences.register()
     display_wave_image.register()
     panels.register()
-    # keymaps.register()
 
 def unregister():
     if bpy.app.background:
         return
-    # keymaps.unregister()
     panels.unregister()
     display_wave_image.unregister()
     preferences.unregister()
