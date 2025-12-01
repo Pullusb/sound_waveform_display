@@ -49,7 +49,8 @@ def side_menu(self, context):
             return
         layout.prop(scn.swd_settings, 'vse_target')
         if scn.swd_settings.vse_target == 'LIST':
-            layout.template_list("SWD_UL_sound_list", "", vse, "sequences", \
+            strip_name = 'strips' if bpy.app.version >= (5,0,0) else 'sequences'
+            layout.template_list("SWD_UL_sound_list", "", vse, strip_name, \
                 scn.swd_settings, "seq_idx", rows=3)
 
     # elif scn.swd_settings.source == 'SPEAKERS':

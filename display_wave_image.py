@@ -257,7 +257,7 @@ class SWD_OT_enable_draw(Operator):
 
 
         vse = context.scene.sequence_editor
-        all_sound_strips = [s for s in vse.sequences if s.type == 'SOUND']
+        all_sound_strips = fn.get_vse_sound_strips(vse)
         speakers = [o for o in context.scene.objects if o.type == 'SPEAKER' and not o.data.muted and not o.hide_viewport]
 
         if source == 'ALL' and not all_sound_strips and not speakers:
@@ -299,7 +299,7 @@ class SWD_OT_enable_draw(Operator):
                 if context.scene.swd_settings.seq_idx < 0:
                     self.report({'ERROR'}, 'Must select a sound in list')
                     return {'CANCELLED'}
-                the_strip = vse.sequences[context.scene.swd_settings.seq_idx]
+                the_strip = fn.vse_strips(vse)[context.scene.swd_settings.seq_idx]
                 if the_strip.type != 'SOUND':
                     self.report({'ERROR'}, 'Must select a sound in list (active index is not a sound)')
                     return {'CANCELLED'}

@@ -41,10 +41,33 @@ class attr_set():
 # bitrate=192,
 # split_channels=False)
 
+def vse_strips(vse=None):
+    """return vse strips, version agnostic"""
+    vse = vse or bpy.context.scene.sequence_editor
+    if bpy.app.version >= (5,0,0):
+        return vse.strips
+    else:
+        return vse.sequences
+
+def vse_strips_all(vse=None):
+    """return vse strips (recursive in meta strips), version agnostic"""
+    vse = vse or bpy.context.scene.sequence_editor
+    if bpy.app.version >= (5,0,0):
+        return vse.strips_all
+    else:
+        return vse.sequences_all
+
+def get_vse_sound_strips(vse=None, recursive=False):
+    """return vse sound strips, version agnostic"""
+    vse = vse or bpy.context.scene.sequence_editor
+    if recursive:
+        return [s for s in vse_strips_all(vse) if s.type == 'SOUND']
+    return [s for s in vse_strips(vse) if s.type == 'SOUND']
+
 def get_sound_strip_in_scene_range(vse=None):
     vse = vse or bpy.context.scene.sequence_editor
     scn = bpy.context.scene
-    strips =  [s for s in vse.sequences if s.type == 'SOUND' \
+    strips =  [s for s in vse_strips(vse) if s.type == 'SOUND' \
         and not s.mute \
         and not (s.frame_final_end <= scn.frame_start or s.frame_final_start >= scn.frame_end)]
 
@@ -90,7 +113,7 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
 
     elif source == 'SPEAKERS':
         ## Mute every audible vse strips
-        temp_changes += [(s, 'mute', True) for s in vse.sequences if s.type == 'SOUND' and not s.mute]
+        temp_changes += [(s, 'mute', True) for s in vse_strips(vse) if s.type == 'SOUND' and not s.mute]
 
     elif source == 'SEQUENCER':
         ## mute every speakers
@@ -117,24 +140,24 @@ def mixdown(filepath, source='ALL', vse_tgt='SELECTED'):
 
         elif vse_tgt == 'UNMUTED':
             # unmuted range (no need to render the whole )
-            unmuted = [s for s in vse.sequences if s.type == 'SOUND' and not s.mute]
+            unmuted = [s for s in vse_strips(vse) if s.type == 'SOUND' and not s.mute]
             start, end = get_start_end(unmuted)
 
         else: # SELECTED or LIST
             if vse_tgt == 'SELECTED':
-                selected_strips = [s for s in vse.sequences if s.type == 'SOUND' and (s.select or s == vse.active_strip)]
+                selected_strips = [s for s in vse_strips(vse) if s.type == 'SOUND' and (s.select or s == vse.active_strip)]
             else: # LIST
-                selected_strips = [vse.sequences[scn.swd_settings.seq_idx]]
+                selected_strips = [vse_strips(vse)[scn.swd_settings.seq_idx]]
 
             # get range
             start, end = get_start_end(selected_strips)
 
             # temp_changes += [(scn, 'use_preview_range', False) # not affected by preview range]
 
-            # one-liner : temp_changes += [(s, 'mute', not s.select) for s in vse.sequences if s.type == 'SOUND']
+            # one-liner : temp_changes += [(s, 'mute', not s.select) for s in vse_strips(vse) if s.type == 'SOUND']
 
             ## mute non selected strips
-            unselected_strips = [s for s in vse.sequences if s.type == 'SOUND' and not s.select]
+            unselected_strips = [s for s in vse_strips(vse) if s.type == 'SOUND' and not s.select]
             temp_changes += [(s, 'mute', True) for s in unselected_strips]
 
             ## unmute selected strips (can be counter-logic to some...)

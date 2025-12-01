@@ -5,6 +5,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [Unreleased] -->
 
+## [2.0.0] - 2025-12-01
+
+### Fixed
+
+- Compatibility with Blender 5.0
+- should still be retrocompatible with previous version (still added a dedicated release for 4 to 4.5)
+
+
 ## [1.0.2] - 2024-05-05
 
 ### Added
