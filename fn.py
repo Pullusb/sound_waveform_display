@@ -1,6 +1,4 @@
 import bpy
-import tempfile
-from pathlib import Path
 from time import time
 import math
 from .preferences import get_addon_prefs
