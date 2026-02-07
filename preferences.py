@@ -20,10 +20,7 @@ def get_addon_prefs():
     function to read current addon preferences properties
     access with : get_addon_prefs().super_special_option
     '''
-    addon_name = os.path.splitext(__name__)[0]
-    preferences = bpy.context.preferences
-    addon_prefs = preferences.addons[addon_name].preferences
-    return (addon_prefs)
+    return bpy.context.preferences.addons[__package__].preferences
 
 def open_addon_prefs():
     '''Open addon prefs windows with focus on current addon'''
@@ -266,7 +263,7 @@ class SWD_OT_download_ffmpeg(bpy.types.Operator):
 
 
 class SWD_sound_waveform_display_addonpref(bpy.types.AddonPreferences):
-    bl_idname = __name__.split('.')[0]
+    bl_idname = __package__
 
     path_to_ffmpeg : StringProperty(
         name="Path to ffmpeg binary",

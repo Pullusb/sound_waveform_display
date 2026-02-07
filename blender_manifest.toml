@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "sound_waveform_display"
-version = "2.0.0"
+version = "2.0.1"
 name = "Sound Waveform Display"
 tagline = "Display selected sound waveform in timeline/dopesheet/graph"
 maintainer = "Samuel Bernou"
