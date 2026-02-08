@@ -1,4 +1,4 @@
-# Display Sound Waveform
+# Sound Waveform Display
 
 Display sound waveform in animation editors
 
@@ -8,7 +8,6 @@ Display sound waveform in animation editors
 
 ### [Demo Youtube](https://www.youtube.com/watch?v=N7i5m417wGY)
 
-> Note: This addon needs ffmpeg in your path to work (on windows a button in addon pref allows an auto install)
 
 ---
 
@@ -18,6 +17,8 @@ Display sound waveform in animation editors
 ## Important
 
 This addon use ffmpeg, if not already accessible on your machine, an auto-install is available in addon preferences
+
+Since it only display the sound stored on the active scene. It is not compatible with the `Sync time scene` of Blender 5+ ([details here](https://github.com/Pullusb/sound_waveform_display/issues/12#issuecomment-3867012859))
 
 ## Description
 
